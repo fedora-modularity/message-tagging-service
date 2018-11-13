@@ -1,0 +1,58 @@
+- id: Building blocks
+  description: Includes building block modules for Fedora.
+  type: module
+  rule:
+      name:
+          - "^javapackages-tools$"
+          - "-ursamajor$"
+      # These two could be omitted in this case
+      stream: ".*"
+      version: ".*"
+      dependencies:
+          buildrequires:
+              # Also unnecessary
+              platform: "^.*$"
+          requires:
+              platform: "^f..$"
+      scratch: no
+      development: no
+  destinations: "f30-modular-ursamajor"
+
+- id: Modular updates for Fedora
+  description: All Fedora modular builds that are part of the distribution.
+  type: module
+  rule:
+      dependencies:
+          requires:
+              platform: "^(?<platform>f..)$"
+      scratch: no
+      development: no
+  destinations: "\\g{platform}-modular-updates-candidate"
+
+- id: EPEL updates
+  type: module
+  rule:
+      dependencies:
+          runtime: "^el.$"
+      scratch: no
+      development: no
+  destinations: "el8-epel-modular-updates-candidate"
+
+- id: Scratch builds
+  description: Catch-all for scratch builds.
+  type: module
+  rule:
+      scratch: yes
+  destinations: "modular-scratch-builds"
+
+- id: Development builds
+  description: Catch-all for development builds.
+  type: module
+  rule:
+      development: yes
+  destinations: "modular-development-builds"
+
+- id: Fallback
+  type: module
+  description: Fallback for strange builds.
+  destinations: "modular-fallback-tag"
