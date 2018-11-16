@@ -3,20 +3,31 @@
   type: module
   rule:
       name:
-          - "^javapackages-tools$"
-          - "-ursamajor$"
+          - '^javapackages-tools$'
+          - '-ursamajor$'
       # These two could be omitted in this case
-      stream: ".*"
-      version: ".*"
+      stream: '.*'
+      version: '.*'
       dependencies:
           buildrequires:
               # Also unnecessary
-              platform: "^.*$"
+              platform: '^.*$'
           requires:
-              platform: "^f..$"
+              platform: '^(?P<platform>f\d+)$'
       scratch: no
       development: no
-  destinations: "f30-modular-ursamajor"
+  destinations: '\g<platform>-modular-ursamajor'
+
+- id: Modular Python for Fedora
+  description: Python Fedora modular builds
+  type: module
+  rule:
+      dependencies:
+          requires:
+              platform: '^(?P<platform>f\d+)$'
+      scratch: no
+      development: no
+  destinations: '\g<platform>-modular-updates-candidate'
 
 - id: Modular updates for Fedora
   description: All Fedora modular builds that are part of the distribution.
@@ -24,35 +35,36 @@
   rule:
       dependencies:
           requires:
-              platform: "^(?<platform>f..)$"
+              platform: '^(?P<platform>f\d+)$'
       scratch: no
       development: no
-  destinations: "\\g{platform}-modular-updates-candidate"
+  destinations: '\g<platform>-modular-updates-candidate'
 
 - id: EPEL updates
+  description: All EPEL modular builds that are part of the distribution.
   type: module
   rule:
       dependencies:
-          runtime: "^el.$"
+          runtime: '^(?P<platform>el\d+)$'
       scratch: no
       development: no
-  destinations: "el8-epel-modular-updates-candidate"
+  destinations: '\g<platform>-epel-modular-updates-candidate'
 
 - id: Scratch builds
   description: Catch-all for scratch builds.
   type: module
   rule:
       scratch: yes
-  destinations: "modular-scratch-builds"
+  destinations: 'modular-scratch-builds'
 
 - id: Development builds
   description: Catch-all for development builds.
   type: module
   rule:
       development: yes
-  destinations: "modular-development-builds"
+  destinations: 'modular-development-builds'
 
 - id: Fallback
   type: module
   description: Fallback for strange builds.
-  destinations: "modular-fallback-tag"
+  destinations: 'modular-fallback-tag'
