@@ -18,47 +18,15 @@ config_stream = open('mts.module-rules.yaml', 'r')
 this_config = yaml.load(config_stream)
 config_stream.close()
 
-def findDictDiff(d1, d2, spacer) :
-	for key, value in d1.items():
-		try :
-			newd2 = d2[key]
-		except:
-			print("    %s Not found in module: %s" % (spacer, key))
-			return False
-		if isinstance(value,dict):
-			print("  %s Checking: %s" % (spacer, key))
-			newspacer = "  %s" % (spacer)
-			return findDictDiff(value, newd2, newspacer)
-		elif isinstance(value,list):
-			print("  %s Checking: %s" % (spacer, key))
-			list_check = False
-			for list_value in value :
-				print("    %s list variable: %s" % (spacer, list_value))
-				print("      %s Checking against: %s" % (spacer, d2))
-				rule_pattern = re.compile(list_value)
-				if rule_pattern.match(str(d2)) :
-					this_destination = rule_pattern.sub(i["destinations"],str(d2))
-					final_destination.append(this_destination)
-					print("        %s Passed" % (spacer))
-					print("       	 %s this destination: %s" % (spacer,this_destination))
-					list_check = True
-				else :
-					print("        %s Failed" % (spacer))
-			if list_check :
-				print("  %s Passed" % (spacer))
-				print("    %s %s" % (spacer,final_destination))
-				return True
-			else :
-				print("  %s Failed" % (spacer))
-				return False
-		else :
-			print("    %s regular variable: %s" % (spacer, value))
-			print("      %s Checking against: %s" % (spacer, newd2))
-			if isinstance(newd2,list):
+def findDiffValue(d1, d2, spacer) :
+			print("    %s Value: %s" % (spacer, d2))
+			print("    %s regular variable: %s" % (spacer, d1))
+			print("      %s Checking against: %s" % (spacer, d2))
+			if isinstance(d2,list):
 				list_check = False
-				for list_value in newd2 :
+				for list_value in d2 :
 					print("        %s Checking against: %s" % (spacer, list_value))
-					rule_pattern = re.compile(value)
+					rule_pattern = re.compile(d1)
 					if rule_pattern.match(str(list_value)) :
 						this_destination = rule_pattern.sub(i["destinations"],str(list_value))
 						final_destination.append(this_destination)
@@ -69,15 +37,14 @@ def findDictDiff(d1, d2, spacer) :
 						print("          %s Failed" % (spacer))
 				if list_check :
 					print("  %s Passed" % (spacer))
-					print("     %s %s" % (spacer,final_destination))
 					return True
 				else :
 					print("  %s Failed" % (spacer))
 					return False
 			else :
-				rule_pattern = re.compile(value)
-				if rule_pattern.match(str(newd2)) :
-					this_destination = rule_pattern.sub(i["destinations"],str(list_value))
+				rule_pattern = re.compile(d1)
+				if rule_pattern.match(str(d2)) :
+					this_destination = rule_pattern.sub(i["destinations"],str(d2))
 					final_destination.append(this_destination)
 					print("  %s Passed" % (spacer))
 					print("     %s this destination: %s" % (spacer,this_destination))
@@ -85,6 +52,44 @@ def findDictDiff(d1, d2, spacer) :
 				else :
 					print("  %s Failed" % (spacer))
 					return False
+
+def findDiffList(d1, d2, spacer) :
+			print("    %s List: %s" % (spacer, d2))
+			list_check = False
+			for list_value in d1 :
+				print("    %s list variable: %s" % (spacer, list_value))
+				print("      %s Checking against: %s" % (spacer, d2))
+				newspacer = "  %s" % (spacer)
+				if findDiffValue(list_value, d2, newspacer) :
+					list_check = True
+			if list_check :
+				print("  %s Passed" % (spacer))
+				return True
+			else :
+				print("  %s Failed" % (spacer))
+				return False
+
+
+def findDiffDict(d1, d2, spacer) :
+	print("    %s Dict: %s" % (spacer, d2))
+	for key, value in d1.items():
+		try :
+			newd2 = d2[key]
+		except:
+			print("    %s Not found in module: %s" % (spacer, key))
+			return False
+		if isinstance(value,dict):
+			print("  %s Checking: %s" % (spacer, key))
+			newspacer = "  %s" % (spacer)
+			return findDiffDict(value, newd2, newspacer)
+		elif isinstance(value,list):
+			print("  %s Checking: %s" % (spacer, key))
+			newspacer = "  %s" % (spacer)
+			return findDiffList(value, newd2, newspacer)
+		else :
+			print("  %s Checking: %s" % (spacer, key))
+			newspacer = "  %s" % (spacer)
+			return findDiffValue(value, newd2, newspacer)
 			
 
 for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
@@ -150,46 +155,27 @@ for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
 						break
 					if isinstance(v,dict):
 						#print("      Rule has a dictionary: %s" % (v))
-						dist_check = findDictDiff(v, check_topkey[0], "  ")
-						if dist_check :
+						if findDiffDict(v, check_topkey[0], "  ") :
 							print("      Passed")
-							print("        Final Destinations %s" % (final_destination))
+							print("        Final Destination(s): %s" % (final_destination))
 						else :
 							print("      Failed")
 							tagit = False
 							break
 					elif isinstance(v,list):
 						#print("      Rule has a list/array: %s" % (v))
-						list_check = False
-						for list_value in v :
-							print("        list variable: %s" % (list_value))
-							print("          Checking against: %s" % (check_topkey))
-							rule_pattern = re.compile(list_value)
-							if rule_pattern.match(str(check_topkey)) :
-								this_destination = rule_pattern.sub(i["destinations"],str(str(check_topkey)))
-								final_destination.append(this_destination)
-								print("        Passed")
-								print("          this destination: %s" % (this_destination))
-								list_check = True
-								break
-							else :
-								print("        Failed")
-						if list_check :
+						if findDiffList(v, check_topkey, "  ") :
 							print("      Passed")
-							print("         %s" % (final_destination))
+							print("        Final Destination(s): %s" % (final_destination))
 						else :
 							print("      Failed")
 							tagit = False
 							break
 					else :
 						#print("      Rule has a regular variable: %s" % (v))
-						print("        Checking against: %s" % (check_topkey))
-						rule_pattern = re.compile(v)
-						if rule_pattern.match(str(check_topkey)) :
-							this_destination = rule_pattern.sub(i["destinations"],str(str(check_topkey)))
-							final_destination.append(this_destination)
+						if findDiffValue(v, check_topkey, "  ") :
 							print("      Passed")
-							print("        this destination: %s" % (this_destination))
+							print("        Final Destination(s): %s" % (final_destination))
 						else :
 							print("      Failed")
 							tagit = False
