@@ -3,7 +3,7 @@
 #   print and urllib are different from python2
 
 import fedmsg
-import urllib
+import urllib.request
 import yaml
 import re
 
