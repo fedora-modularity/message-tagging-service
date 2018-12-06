@@ -107,17 +107,16 @@ def findDiffDict(d1, d2, td, fd, spacer) :
 
 def tagBuild(message, fd) :
 	print("    Tagging Package")
-	## The koji code works, but it is commented out
-	##   due to permissions of tags and packages.
-	## Uncomment out the koji_session lines when tags
-	##   and permissions have been figured out
-	# koji_session = koji.ClientSession(koji_config.server, opts=koji_config.__dict__)
-	# koji_session.ssl_login(cert='/home/quake/tmp/message-tagger/internal/msg-tagger.pem')
+	koji_session = koji.ClientSession(koji_config.server, opts=koji_config.__dict__)
+	koji_session.ssl_login(cert=mts_conf['koji_cert'])
 	this_nvr = message["name"] + '-' + message["stream"].replace('-', '_') + '-' + message["version"] + '.' + message["context"]
 	for this_tag in fd :
 		print("      tag: %s nvr: %s" % (this_tag, this_nvr))
-		# koji_session.tagBuild(this_tag, this_nvr)
-	# koji_session.logout()
+		try:
+		  koji_session.tagBuild(this_tag, this_nvr)
+		except:
+		  print("        Unable to tag.")
+	koji_session.logout()
 	print("    Sending message on message bus")
 	this_body = {}
 	this_body['name'] = message["name"]
@@ -132,7 +131,7 @@ def tagBuild(message, fd) :
 	mb_message.subject = "tagging:" + message["name"]
 	mb_message.body = this_body
 	producer.send(mb_message)
-	print
+	print("      Message sent.")
 	
 
 def message_handler(message, data):

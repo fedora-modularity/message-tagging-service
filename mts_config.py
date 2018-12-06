@@ -3,6 +3,7 @@
 mts_conf = {
 	'rule_file': 'mts.module-rules-internal.yaml',
 	'koji_profile': 'brew',
+	'koji_cert': 'koji-cert.pem',
 	'msg_enviroment': 'stage',
 	'msg_certificate': 'mts.crt',
 	'msg_private_key': 'mts.key',
