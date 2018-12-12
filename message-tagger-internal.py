@@ -43,10 +43,13 @@ def findDiffValue(d1, d2, td, fd, spacer) :
 					rule_pattern = re.compile(d1)
 					if rule_pattern.match(str(list_value)) :
 						print("          %s Passed" % (spacer))
-						this_destination = rule_pattern.sub(td,str(list_value))
-						fd.append(this_destination)
-						print("            %s this destination: %s" % (spacer,this_destination))
 						list_check = True
+						try:
+							this_destination = rule_pattern.sub(td,str(list_value))
+							fd.append(this_destination)
+							print("            %s this destination: %s" % (spacer,this_destination))
+						except:
+							print("            %s this destination same as last one." % (spacer))
 					else :
 						print("          %s Failed" % (spacer))
 				if list_check :
@@ -58,10 +61,13 @@ def findDiffValue(d1, d2, td, fd, spacer) :
 			else :
 				rule_pattern = re.compile(d1)
 				if rule_pattern.match(str(d2)) :
-					this_destination = rule_pattern.sub(td,str(d2))
-					fd.append(this_destination)
 					print("  %s Passed" % (spacer))
-					print("     %s this destination: %s" % (spacer,this_destination))
+					try:
+						this_destination = rule_pattern.sub(td,str(d2))
+						fd.append(this_destination)
+						print("     %s this destination: %s" % (spacer,this_destination))
+					except:
+						print("            %s this destination same as last one." % (spacer))
 					return True
 				else :
 					print("  %s Failed" % (spacer))
@@ -76,6 +82,8 @@ def findDiffList(d1, d2, td, fd, spacer) :
 				newspacer = "  %s" % (spacer)
 				if findDiffValue(list_value, d2, td, fd, newspacer) :
 					list_check = True
+				else :
+					return False
 			if list_check :
 				print("  %s Passed" % (spacer))
 				return True
@@ -86,6 +94,7 @@ def findDiffList(d1, d2, td, fd, spacer) :
 
 def findDiffDict(d1, d2, td, fd, spacer) :
 	print("    %s Dict: %s" % (spacer, d2))
+	dict_check = False
 	for key, value in d1.items():
 		try :
 			newd2 = d2[key]
@@ -95,15 +104,25 @@ def findDiffDict(d1, d2, td, fd, spacer) :
 		if isinstance(value,dict):
 			print("  %s Checking: %s" % (spacer, key))
 			newspacer = "  %s" % (spacer)
-			return findDiffDict(value, newd2, td, fd, newspacer)
+			if findDiffDict(value, newd2, td, fd, newspacer) :
+				dict_check = True
+			else :
+				return False
 		elif isinstance(value,list):
 			print("  %s Checking: %s" % (spacer, key))
 			newspacer = "  %s" % (spacer)
-			return findDiffList(value, newd2, td, fd, newspacer)
+			if findDiffList(value, newd2, td, fd, newspacer) :
+				dict_check = True
+			else :
+				return False
 		else :
 			print("  %s Checking: %s" % (spacer, key))
 			newspacer = "  %s" % (spacer)
-			return findDiffValue(value, newd2, td, fd, newspacer)
+			if findDiffValue(value, newd2, td, fd, newspacer) :
+				dict_check = True
+			else :
+				return False
+	return dict_check
 
 def tagBuild(message, fd) :
 	print("    Tagging Package")
