@@ -16,7 +16,7 @@ mts_conf = mts_config.mts_conf
 
 # Import message-tagger rule file
 config_stream = open(mts_conf['rule_file'], 'r')
-this_config = yaml.load(config_stream)
+this_config = yaml.safe_load(config_stream)
 config_stream.close()
 
 # Import koji config
@@ -176,7 +176,7 @@ def message_handler(message, data):
         except Exception:
             print("      Unable to find yaml file for module.")
             return data['one_message_only'], not data['manual_ack']
-        this_module_yaml = yaml.load(this_module_yaml_url)
+        this_module_yaml = yaml.safe_load(this_module_yaml_url)
         print("    Yaml file downloaded and parsed.")
         # print(yaml.dump(this_module_yaml))
         for this_rule in this_config:
