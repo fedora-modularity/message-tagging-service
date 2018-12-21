@@ -4,7 +4,7 @@ mts_conf = {
 	'rule_file': '/etc/mts/mts.module-rules.yaml',
 	'koji_profile': 'brew',
 	'koji_cert': '/etc/mts/msg-tagger.pem',
-	'msg_enviroment': 'stage',
+	'msg_environment': 'stage',
 	'msg_certificate': '/etc/mts/msg-tagger.crt',
 	'msg_private_key': '/etc/mts/msg-tagger.key',
 	'msg_trusted_certificates': '/etc/mts/msg-tagger-ca.crt',

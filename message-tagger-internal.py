@@ -24,7 +24,7 @@ koji_config = koji.get_profile_module(mts_conf['koji_profile']).config
 
 # Setup messaging configuration
 message_config = {
-  'urls': broker_envs[mts_conf['msg_enviroment']],
+  'urls': broker_envs[mts_conf['msg_environment']],
   'certificate': mts_conf['msg_certificate'],
   'private_key': mts_conf['msg_private_key'],
   'trusted_certificates': mts_conf['msg_trusted_certificates'],
