@@ -15,7 +15,7 @@ config['topic'] = "org.fedoraproject.prod.mbs.module.state.change"
 
 # Import message-tagger config file
 config_stream = open('mts.module-rules.yaml', 'r')
-this_config = yaml.load(config_stream)
+this_config = yaml.safe_load(config_stream)
 config_stream.close()
 
 
@@ -108,7 +108,7 @@ for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
         )
         print("  Downloading yaml file: %s" % this_modulemd_txt)
         this_module_yaml_url = urllib.request.urlopen(this_modulemd_txt)
-        this_module_yaml = yaml.load(this_module_yaml_url)
+        this_module_yaml = yaml.safe_load(this_module_yaml_url)
         print("    Yaml file downloaded and parsed.")
         # print(yaml.dump(this_module_yaml))
         for i in this_config:
