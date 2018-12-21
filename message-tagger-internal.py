@@ -31,7 +31,7 @@ message_config = {
 }
 
 
-def findDiffValue(d1, d2, td, fd, spacer):
+def find_diff_value(d1, d2, td, fd, spacer):
     print("    %s Value: %s" % (spacer, d2))
     print("    %s regular variable: %s" % (spacer, d1))
     print("      %s Checking against: %s" % (spacer, d2))
@@ -74,14 +74,14 @@ def findDiffValue(d1, d2, td, fd, spacer):
             return False
 
 
-def findDiffList(d1, d2, td, fd, spacer):
+def find_diff_list(d1, d2, td, fd, spacer):
     print("    %s List: %s" % (spacer, d2))
     list_check = False
     for list_value in d1:
         print("    %s list variable: %s" % (spacer, list_value))
         print("      %s Checking against: %s" % (spacer, d2))
         newspacer = "  %s" % spacer
-        if findDiffValue(list_value, d2, td, fd, newspacer):
+        if find_diff_value(list_value, d2, td, fd, newspacer):
             list_check = True
         else:
             return False
@@ -93,7 +93,7 @@ def findDiffList(d1, d2, td, fd, spacer):
         return False
 
 
-def findDiffDict(d1, d2, td, fd, spacer):
+def find_diff_dict(d1, d2, td, fd, spacer):
     print("    %s Dict: %s" % (spacer, d2))
     dict_check = False
     for key, value in d1.items():
@@ -104,28 +104,28 @@ def findDiffDict(d1, d2, td, fd, spacer):
         if isinstance(value, dict):
             print("  %s Checking: %s" % (spacer, key))
             newspacer = "  %s" % spacer
-            if findDiffDict(value, newd2, td, fd, newspacer):
+            if find_diff_dict(value, newd2, td, fd, newspacer):
                 dict_check = True
             else:
                 return False
         elif isinstance(value, list):
             print("  %s Checking: %s" % (spacer, key))
             newspacer = "  %s" % spacer
-            if findDiffList(value, newd2, td, fd, newspacer):
+            if find_diff_list(value, newd2, td, fd, newspacer):
                 dict_check = True
             else:
                 return False
         else:
             print("  %s Checking: %s" % (spacer, key))
             newspacer = "  %s" % spacer
-            if findDiffValue(value, newd2, td, fd, newspacer):
+            if find_diff_value(value, newd2, td, fd, newspacer):
                 dict_check = True
             else:
                 return False
     return dict_check
 
 
-def tagBuild(message, fd):
+def tag_build(message, fd):
     print("    Tagging Package")
     koji_session = koji.ClientSession(koji_config.server,
                                       opts=koji_config.__dict__)
@@ -186,7 +186,7 @@ def message_handler(message, data):
             if check_rule is None:
                 final_destination.append(this_rule["destinations"])
                 print("    No rules found.  Thus we tag: %s" % final_destination)
-                tagBuild(this_message, final_destination)
+                tag_build(this_message, final_destination)
                 break
             for k, v in check_rule.items():
                 tagit = True
@@ -218,8 +218,8 @@ def message_handler(message, data):
                         tagit = False
                         break
                     if isinstance(v, dict):
-                        if findDiffDict(v, check_topkey[0], this_rule["destinations"],
-                                        final_destination, "  "):
+                        if find_diff_dict(v, check_topkey[0], this_rule["destinations"],
+                                          final_destination, "  "):
                             print("      Passed")
                             print("        Final Destination(s): %s" % final_destination)
                         else:
@@ -227,8 +227,8 @@ def message_handler(message, data):
                             tagit = False
                             break
                     elif isinstance(v, list):
-                        if findDiffList(v, check_topkey, this_rule["destinations"],
-                                        final_destination, "  "):
+                        if find_diff_list(v, check_topkey, this_rule["destinations"],
+                                          final_destination, "  "):
                             print("      Passed")
                             print("        Final Destination(s): %s" % (final_destination))
                         else:
@@ -236,8 +236,8 @@ def message_handler(message, data):
                             tagit = False
                             break
                     else:
-                        if findDiffValue(v, check_topkey, this_rule["destinations"],
-                                         final_destination, "  "):
+                        if find_diff_value(v, check_topkey, this_rule["destinations"],
+                                           final_destination, "  "):
                             print("      Passed")
                             print("        Final Destination(s): %s" % final_destination)
                         else:
@@ -248,7 +248,7 @@ def message_handler(message, data):
                 if len(final_destination) == 0:
                     final_destination.append(this_rule["destinations"])
                 print("  According to the rules, this should be tagged: %r" % final_destination)
-                tagBuild(this_message, final_destination)
+                tag_build(this_message, final_destination)
                 break
     return data['one_message_only'], not data['manual_ack']
 

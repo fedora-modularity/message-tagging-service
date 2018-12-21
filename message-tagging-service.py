@@ -19,7 +19,7 @@ this_config = yaml.load(config_stream)
 config_stream.close()
 
 
-def findDiffValue(d1, d2, spacer):
+def find_diff_value(d1, d2, spacer):
     print("    %s Value: %s" % (spacer, d2))
     print("    %s regular variable: %s" % (spacer, d1))
     print("      %s Checking against: %s" % (spacer, d2))
@@ -55,14 +55,14 @@ def findDiffValue(d1, d2, spacer):
             return False
 
 
-def findDiffList(d1, d2, spacer):
+def find_diff_list(d1, d2, spacer):
     print("    %s List: %s" % (spacer, d2))
     list_check = False
     for list_value in d1:
         print("    %s list variable: %s" % (spacer, list_value))
         print("      %s Checking against: %s" % (spacer, d2))
         newspacer = "  %s" % spacer
-        if findDiffValue(list_value, d2, newspacer):
+        if find_diff_value(list_value, d2, newspacer):
             list_check = True
     if list_check:
         print("  %s Passed" % spacer)
@@ -72,7 +72,7 @@ def findDiffList(d1, d2, spacer):
         return False
 
 
-def findDiffDict(d1, d2, spacer):
+def find_diff_dict(d1, d2, spacer):
     print("    %s Dict: %s" % (spacer, d2))
     for key, value in d1.items():
         newd2 = d2.get(key)
@@ -82,15 +82,15 @@ def findDiffDict(d1, d2, spacer):
         if isinstance(value, dict):
             print("  %s Checking: %s" % (spacer, key))
             newspacer = "  %s" % spacer
-            return findDiffDict(value, newd2, newspacer)
+            return find_diff_dict(value, newd2, newspacer)
         elif isinstance(value, list):
             print("  %s Checking: %s" % (spacer, key))
             newspacer = "  %s" % spacer
-            return findDiffList(value, newd2, newspacer)
+            return find_diff_list(value, newd2, newspacer)
         else:
             print("  %s Checking: %s" % (spacer, key))
             newspacer = "  %s" % spacer
-            return findDiffValue(value, newd2, newspacer)
+            return find_diff_value(value, newd2, newspacer)
 
 
 for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
@@ -151,7 +151,7 @@ for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
                         break
                     if isinstance(v, dict):
                         # print("      Rule has a dictionary: %s" % (v))
-                        if findDiffDict(v, check_topkey[0], "  "):
+                        if find_diff_dict(v, check_topkey[0], "  "):
                             print("      Passed")
                             print("        Final Destination(s): %s" % final_destination)
                         else:
@@ -160,7 +160,7 @@ for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
                             break
                     elif isinstance(v, list):
                         # print("      Rule has a list/array: %s" % (v))
-                        if findDiffList(v, check_topkey, "  "):
+                        if find_diff_list(v, check_topkey, "  "):
                             print("      Passed")
                             print("        Final Destination(s): %s" % final_destination)
                         else:
@@ -169,7 +169,7 @@ for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
                             break
                     else:
                         # print("      Rule has a regular variable: %s" % (v))
-                        if findDiffValue(v, check_topkey, "  "):
+                        if find_diff_value(v, check_topkey, "  "):
                             print("      Passed")
                             print("        Final Destination(s): %s" % final_destination)
                         else:
