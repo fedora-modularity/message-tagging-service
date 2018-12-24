@@ -1,10 +1,12 @@
 *~
 *.swp
+.coverage
 
 build/
 dist/
 *.egg-info/
 .env/
 .idea/
+.tox/
 __pycache__/
 
