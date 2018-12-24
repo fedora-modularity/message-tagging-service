@@ -1,0 +1,5 @@
+fedmsg
+koji
+python-qpid-proton
+PyYAML
+# rhmsg is not available in PyPI so far.

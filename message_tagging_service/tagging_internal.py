@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 import json
 import urllib.request
@@ -6,8 +6,8 @@ import yaml
 import re
 import proton
 import koji
-import mts_config
 
+from message_tagging_service import mts_config
 from rhmsg.activemq.consumer import AMQConsumer
 from rhmsg.activemq.producer import AMQProducer
 
@@ -253,16 +253,17 @@ def message_handler(message, data):
     return data['one_message_only'], not data['manual_ack']
 
 
-consumer = AMQConsumer(**message_config)
-consumer.consume(
-    mts_conf['msg_topic_listen'],
-    selector=None,
-    callback=message_handler,
-    auto_accept=False,
-    data={
-        'dump': True,
-        'pp': False,
-        'one_message_only': False,
-        'manual_ack': False
-    }
-)
+def main():
+    consumer = AMQConsumer(**message_config)
+    consumer.consume(
+        mts_conf['msg_topic_listen'],
+        selector=None,
+        callback=message_handler,
+        auto_accept=False,
+        data={
+            'dump': True,
+            'pp': False,
+            'one_message_only': False,
+            'manual_ack': False
+        }
+    )

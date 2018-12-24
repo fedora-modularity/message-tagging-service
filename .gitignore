@@ -1,7 +1,10 @@
 *~
 *.swp
 
-.idea/
+build/
+dist/
+*.egg-info/
 .env/
+.idea/
 __pycache__/
 
