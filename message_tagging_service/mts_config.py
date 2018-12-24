@@ -10,7 +10,6 @@ mts_conf = {
     'msg_trusted_certificates': '/etc/mts/msg-tagger-ca.crt',
     'msg_topic_send': 'message.bus.msgtag',
     'msg_topic_listen': 'Consumer.username.stage.message.bus.mbs.module.state.change',
-    'mod_url_header': 'http://download.example.com/koji/brewroot/packages',
 }
 
 broker_envs = {

@@ -2,4 +2,5 @@ fedmsg
 koji
 python-qpid-proton
 PyYAML
+requests
 # rhmsg is not available in PyPI so far.

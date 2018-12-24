@@ -4,9 +4,14 @@
 #   print and urllib are different from python2
 
 import fedmsg
-import urllib.request
-import yaml
+import logging
 import re
+import requests
+import yaml
+
+from message_tagging_service.utils import retrieve_modulemd_content
+
+logger = logging.getLogger(__name__)
 
 # Import fedmsg config file
 config = fedmsg.config.load_config([], None)
@@ -104,15 +109,21 @@ def main():
             this_stream = this_message["stream"]
             this_version = this_message["version"]
             this_context = this_message["context"]
-            this_modulemd_txt = (
-                "https://kojipkgs.fedoraproject.org/packages/%s/%s/%s.%s/"
-                "files/module/modulemd.txt" % (this_name, this_stream, this_version, this_context)
-            )
-            print("  Downloading yaml file: %s" % this_modulemd_txt)
-            this_module_yaml_url = urllib.request.urlopen(this_modulemd_txt)
-            this_module_yaml = yaml.safe_load(this_module_yaml_url)
+            nsvc = f'{this_name}-{this_stream}-{this_version}-{this_context}'
+
+            try:
+                this_module_yaml = yaml.safe_load(
+                    retrieve_modulemd_content(
+                        this_name, this_stream, this_version, this_context))
+            except requests.exceptions.HTTPError as e:
+                print("      Unable to find yaml file for module.")
+                logger.exception(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
+
+                # Continue to wait for and handle next module build which moves to ready state
+                continue
+
             print("    Yaml file downloaded and parsed.")
-            # print(yaml.dump(this_module_yaml))
+
             for i in this_config:
                 print("  Checking: %s" % i["id"])
                 final_destination = []

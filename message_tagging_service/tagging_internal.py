@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 
 import json
-import urllib.request
-import yaml
-import re
-import proton
 import koji
+import logging
+import proton
+import re
+import requests
+import yaml
 
 from message_tagging_service import mts_config
+from message_tagging_service.utils import retrieve_modulemd_content
 from rhmsg.activemq.consumer import AMQConsumer
 from rhmsg.activemq.producer import AMQProducer
+
+logger = logging.getLogger(__name__)
 
 broker_envs = mts_config.broker_envs
 mts_conf = mts_config.mts_conf
@@ -167,18 +171,19 @@ def message_handler(message, data):
         this_stream = this_message["stream"].replace('-', '_')
         this_version = this_message["version"]
         this_context = this_message["context"]
-        this_modulemd_txt = "%s/%s/%s/%s.%s/files/module/modulemd.txt" % (
-            mts_conf['mod_url_header'], this_name, this_stream, this_version, this_context)
-        print("  Downloading yaml file: %s" % this_modulemd_txt)
+        nsvc = f'{this_name}-{this_stream}-{this_version}-{this_context}'
+
         try:
-            # FIXME: use requests
-            this_module_yaml_url = urllib.request.urlopen(this_modulemd_txt)
-        except Exception:
+            this_module_yaml = yaml.safe_load(
+                retrieve_modulemd_content(
+                    this_name, this_stream, this_version, this_context))
+        except requests.exceptions.HTTPError as e:
             print("      Unable to find yaml file for module.")
+            logger.exception(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
             return data['one_message_only'], not data['manual_ack']
-        this_module_yaml = yaml.safe_load(this_module_yaml_url)
+
         print("    Yaml file downloaded and parsed.")
-        # print(yaml.dump(this_module_yaml))
+
         for this_rule in this_config:
             print("  Checking: %s" % (this_rule["id"]))
             final_destination = []
