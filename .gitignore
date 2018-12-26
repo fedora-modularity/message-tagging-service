@@ -1,9 +1,11 @@
 *~
-*.swp
 .coverage
+*.pyc
+*.swp
 
 build/
 dist/
+htmlcov/
 *.egg-info/
 .env/
 .idea/

@@ -1,0 +1,31 @@
+- id: Building blocks
+  description: Includes building block modules for Fedora.
+  type: module
+  rule:
+      name:
+          - '^javapackages-tools$'
+          - '-ursamajor$'
+      # These two could be omitted in this case
+      stream: '.*'
+      version: '.*'
+      dependencies:
+          buildrequires:
+              # Also unnecessary
+              platform: '^.*$'
+          requires:
+              platform: '^(?P<platform>f\d+)$'
+      scratch: no
+      development: no
+  destinations: '\g<platform>-modular-ursamajor'
+
+- id: Modular Python for Fedora
+  description: Python Fedora modular builds
+  type: module
+  rule:
+      dependencies:
+          requires:
+              platform: '^(?P<platform>f\d+)$'
+      scratch: no
+      development: no
+  destinations: '\g<platform>-modular-updates-candidate'
+
