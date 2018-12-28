@@ -29,17 +29,6 @@
       development: no
   destinations: '\g<platform>-modular-updates-candidate'
 
-- id: Modular updates for Fedora
-  description: All Fedora modular builds that are part of the distribution.
-  type: module
-  rule:
-      dependencies:
-          requires:
-              platform: '^(?P<platform>f\d+)$'
-      scratch: no
-      development: no
-  destinations: '\g<platform>-modular-updates-candidate'
-
 - id: EPEL updates
   description: All EPEL modular builds that are part of the distribution.
   type: module

@@ -4,10 +4,13 @@
 #   print and urllib are different from python2
 
 import fedmsg
+import koji
 import logging
 import re
 import requests
 import yaml
+
+from operator import truth
 
 from message_tagging_service.mts_config import mts_conf
 from message_tagging_service.utils import retrieve_modulemd_content
@@ -162,7 +165,7 @@ class RuleDef(object):
         for key, value in rule_dict.items():
             new_check_dict = check_dict.get(key)
             if new_check_dict is None:
-                logger.warning('%s is not found in module: %s', key)
+                logger.warning('%s is not found in module', key)
                 return False
             if isinstance(value, dict):
                 logger.debug('Checking: %s', key)
@@ -261,6 +264,18 @@ class RuleDef(object):
             return RuleMatch(False)
 
 
+def tag_build(nvr, dest_tags):
+    koji_config = koji.read_config(mts_conf['koji_profile'])
+    koji_session = koji.ClientSession(koji_config['server'])
+    koji_session.krb_login()
+    for tag in dest_tags:
+        try:
+            koji_session.tagBuild(tag, nvr)
+        except Exception:
+            logger.exception('Failed to tag %s to build %s', tag, nvr)
+    koji_session.logout()
+
+
 def main():
     # Import message-tagger config file
     with open(mts_conf['rule_file'], 'r') as f:
@@ -293,12 +308,16 @@ def main():
 
         logger.debug('Modulemd file is downloaded and parsed.')
 
-        rule_matches = [
+        rule_matches = list(filter(truth, (
             RuleDef(rule_def).match(modulemd)
             for rule_def in rule_defs
-        ]
+        )))
 
-        if not any(rule_matches):
+        if rule_matches:
+            stream = this_stream.replace('-', '_')
+            nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
+            dest_tags = [item.dest_tag for item in rule_matches]
+            logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
+            tag_build(nvr, dest_tags)
+        else:
             logger.info('Module build %s does not match any rule.', nsvc)
-
-        # TODO: tag build

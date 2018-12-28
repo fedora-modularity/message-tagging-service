@@ -3,6 +3,7 @@
 import os
 
 from mock import Mock
+from mock import call
 from mock import patch
 
 from message_tagging_service import tagging_service
@@ -115,8 +116,9 @@ class TestMatchRuleDefinitions(object):
 
     @patch('fedmsg.tail_messages')
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('message_tagging_service.tagging_service.tag_build')
     def test_not_tag_build_if_no_rules_are_matched(
-            self, retrieve_modulemd_content, tail_messages):
+            self, tag_build, retrieve_modulemd_content, tail_messages):
         # Note that, no module property matches rule in rule file.
         tail_messages.side_effect = [[
             ('name', 'endpoint', 'topic', {'msg': {
@@ -152,12 +154,15 @@ data:
                 assert ('Module build %s does not match any rule.', 'ant-1-1-c1') == \
                        info.call_args[0]
 
-                # TODO: assert build is not tagged.
+                tag_build.assert_not_called()
 
     @patch('fedmsg.tail_messages')
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('koji.ClientSession')
+    @patch('koji.read_config')
     def test_tag_build_if_match_one_rule_only(
-            self, retrieve_modulemd_content, tail_messages):
+            self, read_config, ClientSession, retrieve_modulemd_content,
+            tail_messages):
         tail_messages.side_effect = [[
             ('name', 'endpoint', 'topic', {'msg': {
                 'name': 'javapackages-tools',
@@ -189,12 +194,20 @@ data:
         with patch.dict(tagging_service.mts_conf, {'rule_file': rule_file}):
             tagging_service.main()
 
-            # TODO: assert build is tagged with f29-modular-ursamajor.
+            session = ClientSession.return_value
+            nvr = 'javapackages-tools-1-1.c1'
+            session.tagBuild.assert_has_calls([
+                call('f29-modular-ursamajor', nvr),
+                call('modular-fallback-tag', nvr),
+            ], any_order=True)
 
     @patch('fedmsg.tail_messages')
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('koji.ClientSession')
+    @patch('koji.read_config')
     def test_tag_build_if_multiple_rules_are_matched(
-            self, retrieve_modulemd_content, tail_messages):
+            self, read_config, ClientSession, retrieve_modulemd_content,
+            tail_messages):
         tail_messages.side_effect = [[
             ('name', 'endpoint', 'topic', {'msg': {
                 'name': 'javapackages-tools',
@@ -228,5 +241,9 @@ data:
         with patch.dict(tagging_service.mts_conf, {'rule_file': rule_file}):
             tagging_service.main()
 
-            # TODO: assert build is tagged with
-            #       f29-modular-ursamajor and modular-development-builds.
+            session = ClientSession.return_value
+            nvr = 'javapackages-tools-1-1.c1'
+            session.tagBuild.assert_has_calls([
+                call('modular-development-builds', nvr),
+                call('modular-fallback-tag', nvr),
+            ], any_order=True)
