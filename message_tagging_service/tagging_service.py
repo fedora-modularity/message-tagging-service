@@ -1,9 +1,25 @@
 # -*- coding: utf-8 -*-
+#
+# Message tagging service is an event-driven service to tag build.
+# Copyright (C) 2019  Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Authors: Troy Dawson
+#          Chenxiong Qi <cqi@redhat.com>
 
-# This has been optimized for python3
-#   print and urllib are different from python2
-
-import fedmsg
 import koji
 import logging
 import re
@@ -16,12 +32,6 @@ from message_tagging_service.mts_config import mts_conf
 from message_tagging_service.utils import retrieve_modulemd_content
 
 logger = logging.getLogger(__name__)
-
-# Import fedmsg config file
-config = fedmsg.config.load_config([], None)
-config['mute'] = True
-config['timeout'] = 0
-config['topic'] = "org.fedoraproject.prod.mbs.module.state.change"
 
 
 class RuleMatch(object):
@@ -160,7 +170,7 @@ class RuleDef(object):
         :param dict check_dict:
         :return: True if match, otherwise False.
         :rtype: bool
-        """
+        """  # noqa
         match = True
         for key, value in rule_dict.items():
             new_check_dict = check_dict.get(key)
@@ -265,7 +275,7 @@ class RuleDef(object):
 
 
 def tag_build(nvr, dest_tags):
-    koji_config = koji.read_config(mts_conf['koji_profile'])
+    koji_config = koji.read_config(mts_conf.koji_profile)
     koji_session = koji.ClientSession(koji_config['server'])
     koji_session.krb_login()
     for tag in dest_tags:
@@ -276,48 +286,40 @@ def tag_build(nvr, dest_tags):
     koji_session.logout()
 
 
-def main():
-    # Import message-tagger config file
-    with open(mts_conf['rule_file'], 'r') as f:
-        rule_defs = yaml.safe_load(f)
+def handle(rule_defs, event_msg):
+    this_name = event_msg["name"]
+    this_stream = event_msg["stream"]
+    this_version = event_msg["version"]
+    this_context = event_msg["context"]
+    nsvc = f"{this_name}-{this_stream}-{this_version}-{this_context}"
 
-    for name, endpoint, topic, msg in fedmsg.tail_messages(**config):
-        this_message = msg["msg"]
-        logger.debug(name, this_message["state_name"])
+    try:
+        modulemd = yaml.safe_load(
+            retrieve_modulemd_content(
+                this_name, this_stream, this_version, this_context))
+    except requests.exceptions.HTTPError as e:
+        logger.exception(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
 
-        if this_message["state_name"] != "ready":
-            continue
+        # Continue to wait for and handle next module build which moves
+        # to ready state.
+        return
 
-        this_name = this_message["name"]
-        this_stream = this_message["stream"]
-        this_version = this_message["version"]
-        this_context = this_message["context"]
-        nsvc = f"{this_name}-{this_stream}-{this_version}-{this_context}"
+    logger.debug('Modulemd file is downloaded and parsed.')
 
-        try:
-            modulemd = yaml.safe_load(
-                retrieve_modulemd_content(
-                    this_name, this_stream, this_version, this_context))
-        except requests.exceptions.HTTPError as e:
-            print("      Unable to find yaml file for module.")
-            logger.exception(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
+    rule_matches = list(filter(truth, (
+        RuleDef(rule_def).match(modulemd)
+        for rule_def in rule_defs
+    )))
 
-            # Continue to wait for and handle next module build which moves
-            # to ready state.
-            continue
-
-        logger.debug('Modulemd file is downloaded and parsed.')
-
-        rule_matches = list(filter(truth, (
-            RuleDef(rule_def).match(modulemd)
-            for rule_def in rule_defs
-        )))
-
-        if rule_matches:
-            stream = this_stream.replace('-', '_')
-            nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
-            dest_tags = [item.dest_tag for item in rule_matches]
-            logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
-            tag_build(nvr, dest_tags)
+    if rule_matches:
+        stream = this_stream.replace('-', '_')
+        nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
+        dest_tags = [item.dest_tag for item in rule_matches]
+        logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
+        if mts_conf.dry_run:
+            logger.info('DRY-RUN: tag build nvr: %s, destination tags: %r',
+                        nvr, dest_tags)
         else:
-            logger.info('Module build %s does not match any rule.', nsvc)
+            tag_build(nvr, dest_tags)
+    else:
+        logger.info('Module build %s does not match any rule.', nsvc)

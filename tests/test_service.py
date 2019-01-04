@@ -7,6 +7,7 @@ from mock import call
 from mock import patch
 
 from message_tagging_service import tagging_service
+from message_tagging_service.utils import read_rule_defs
 
 test_data_dir = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -114,22 +115,10 @@ class TestRuleDefinitionCheck(object):
 
 class TestMatchRuleDefinitions(object):
 
-    @patch('fedmsg.tail_messages')
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
     @patch('message_tagging_service.tagging_service.tag_build')
     def test_not_tag_build_if_no_rules_are_matched(
-            self, tag_build, retrieve_modulemd_content, tail_messages):
-        # Note that, no module property matches rule in rule file.
-        tail_messages.side_effect = [[
-            ('name', 'endpoint', 'topic', {'msg': {
-                'name': 'ant',
-                'stream': '1',
-                'version': '1',
-                'context': 'c1',
-                'state_name': 'ready',
-            }})
-        ]]
-
+            self, tag_build, retrieve_modulemd_content):
         # Note that, platform does not match the rule in rule file.
         retrieve_modulemd_content.return_value = '''\
 ---
@@ -148,31 +137,28 @@ data:
 '''
 
         rule_file = os.path.join(test_data_dir, 'mts-test-for-no-match.yaml')
-        with patch.dict(tagging_service.mts_conf, {'rule_file': rule_file}):
-            with patch.object(tagging_service.logger, 'info') as info:
-                tagging_service.main()
-                assert ('Module build %s does not match any rule.', 'ant-1-1-c1') == \
-                       info.call_args[0]
+        with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
+            rule_defs = read_rule_defs()
 
-                tag_build.assert_not_called()
-
-    @patch('fedmsg.tail_messages')
-    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
-    @patch('koji.ClientSession')
-    @patch('koji.read_config')
-    def test_tag_build_if_match_one_rule_only(
-            self, read_config, ClientSession, retrieve_modulemd_content,
-            tail_messages):
-        tail_messages.side_effect = [[
-            ('name', 'endpoint', 'topic', {'msg': {
-                'name': 'javapackages-tools',
+        with patch.object(tagging_service.logger, 'info') as info:
+            # Note that, no module property matches rule in rule file.
+            tagging_service.handle(rule_defs, {
+                'name': 'ant',
                 'stream': '1',
                 'version': '1',
                 'context': 'c1',
                 'state_name': 'ready',
-            }})
-        ]]
+            })
 
+            assert ('Module build %s does not match any rule.', 'ant-1-1-c1') == \
+                info.call_args[0]
+            tag_build.assert_not_called()
+
+    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('koji.ClientSession')
+    @patch('koji.read_config')
+    def test_tag_build_if_match_one_rule_only(
+            self, read_config, ClientSession, retrieve_modulemd_content):
         # Note that, platform does not match the rule in rule file.
         retrieve_modulemd_content.return_value = '''\
 ---
@@ -191,8 +177,15 @@ data:
 '''
 
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch.dict(tagging_service.mts_conf, {'rule_file': rule_file}):
-            tagging_service.main()
+        with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
+            rule_defs = read_rule_defs()
+            tagging_service.handle(rule_defs, {
+                'name': 'javapackages-tools',
+                'stream': '1',
+                'version': '1',
+                'context': 'c1',
+                'state_name': 'ready',
+            })
 
             session = ClientSession.return_value
             nvr = 'javapackages-tools-1-1.c1'
@@ -201,23 +194,11 @@ data:
                 call('modular-fallback-tag', nvr),
             ], any_order=True)
 
-    @patch('fedmsg.tail_messages')
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
     @patch('koji.ClientSession')
     @patch('koji.read_config')
     def test_tag_build_if_multiple_rules_are_matched(
-            self, read_config, ClientSession, retrieve_modulemd_content,
-            tail_messages):
-        tail_messages.side_effect = [[
-            ('name', 'endpoint', 'topic', {'msg': {
-                'name': 'javapackages-tools',
-                'stream': '1',
-                'version': '1',
-                'context': 'c1',
-                'state_name': 'ready',
-            }})
-        ]]
-
+            self, read_config, ClientSession, retrieve_modulemd_content):
         # Note that, {development: true} is added. That will causes this module
         # matches a second rule as well.
         retrieve_modulemd_content.return_value = '''\
@@ -238,8 +219,15 @@ data:
 '''
 
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch.dict(tagging_service.mts_conf, {'rule_file': rule_file}):
-            tagging_service.main()
+        with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
+            rule_defs = read_rule_defs()
+            tagging_service.handle(rule_defs, {
+                'name': 'javapackages-tools',
+                'stream': '1',
+                'version': '1',
+                'context': 'c1',
+                'state_name': 'ready',
+            })
 
             session = ClientSession.return_value
             nvr = 'javapackages-tools-1-1.c1'

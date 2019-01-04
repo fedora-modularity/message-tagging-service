@@ -27,12 +27,10 @@ setup(
     keywords='messaging,module,tag,koji',
     packages=find_packages(),
     install_requires=install_requires,
-    entry_points={
-        'console_scripts': [
-            'message-tagger-internal = message_tagging_service.tagging_internal.main',
-            'message-tagging-service = message_tagging_service.tagging_service.main',
-        ],
-    },
+    entry_points='''
+        [moksha.consumer]
+        mts-consumer = message_tagging_service.consumer:MTSConsumer
+    ''',
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
         'Programming Language :: Python',

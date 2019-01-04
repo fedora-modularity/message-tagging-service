@@ -19,37 +19,31 @@
 #
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
-import koji
-import requests
-import yaml
+import fedmsg.consumers
+import logging
 
 from message_tagging_service.mts_config import mts_conf
+from message_tagging_service import tagging_service
+from message_tagging_service.utils import read_rule_defs
+
+logger = logging.getLogger(__name__)
 
 
-def retrieve_modulemd_content(name, stream, version, context):
-    """Retrieve and return modulemd.txt from Koji/Brew
+class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
+    topic = mts_conf.messaging_topics
+    config_key = 'mts-consumer'
 
-    :param str name: module's name.
-    :param str stream: module's stream.
-    :param str version: module's version.
-    :param str context: module's context.
-    :return: modulemd content.
-    :rtype: str
-    """
-    koji_config = koji.read_config(mts_conf.koji_profile)
-    url = (f'{koji_config["topurl"]}/{name}/{stream}/{version}.{context}'
-           f'/files/module/modulemd.txt')
-    resp = requests.get(url)
-    resp.raise_for_status()
-    return resp.content
+    def __init__(self, *args, **kwargs):
+        super(MTSConsumer, self).__init__(*args, **kwargs)
+        self.rule_defs = read_rule_defs()
 
+    def consume(self, msg):
+        logger.debug('Got message: %r', msg)
 
-def read_rule_defs():
-    """Read rule definiations from configured rule file
+        event_msg = msg['msg']
+        if event_msg['state_name'] != 'ready':
+            logger.info('Skip module build %s as it is not in ready state yet.',
+                        event_msg['koji_tag'])
+            return
 
-    :return: a rule file is a YAML file, which is read, parsed and returned as
-        a mapping.
-    :rtype: dict
-    """
-    with open(mts_conf.rule_file, 'r') as f:
-        return yaml.safe_load(f)
+        tagging_service.handle(self.rule_defs, event_msg)
