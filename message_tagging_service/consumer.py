@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
-    topic = mts_conf.messaging_topics
+    topic = mts_conf.consumer_topics
     config_key = 'mts-consumer'
 
     def __init__(self, *args, **kwargs):
