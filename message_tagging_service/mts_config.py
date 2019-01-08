@@ -5,8 +5,7 @@ import os
 
 class BaseConfiguration:
     dry_run = os.environ.get('MTS_DRY_RUN', False)
-    # rule_file = '/etc/mts/mts.module-rules.yaml'
-    rule_file = '/home/cqi/code/f2/message-tagging-service/rules/mts.module-rules.yaml'
+    rule_file = '/etc/mts/mts.module-rules.yaml'
     koji_profile = 'koji'
     koji_cert = '/etc/mts/msg-tagger.pem'
 
