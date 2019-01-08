@@ -44,7 +44,7 @@ class TestConsumer(object):
         consumer = self.new_consumer()
 
         event_msg = {'state_name': 'ready'}
-        consumer.consume({'msg': event_msg})
+        consumer.consume({'body': {'msg': event_msg}})
 
         handle.assert_called_once_with(read_rule_defs.return_value, event_msg)
 
@@ -52,9 +52,9 @@ class TestConsumer(object):
     @patch.object(consumer.tagging_service, 'handle')
     def test_ignore_message_if_not_ready(self, handle, read_rule_defs):
         consumer = self.new_consumer()
-        consumer.consume({'msg': {
+        consumer.consume({'body': {'msg': {
             'state_name': 'done',
             'koji_tag': 'module-modulea-1-1-c1',
-        }})
+        }}})
 
         handle.assert_not_called()
