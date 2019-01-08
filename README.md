@@ -38,6 +38,30 @@ There are two type of configurations.
   running in production. ``DevConfiguration`` contains anything for running in
   development mode.
 
+## Messaging
+
+Once tags are applied to a build successfully, a message will be sent to topic
+``build.tagged`` on message bus. Message has this format:
+
+```
+{
+  "build": {
+    "id": id,
+    "name": name,
+    "stream": stream,
+    "version": version,
+    "context": context,
+  },
+  "nvr": N-V-R,
+  "destination_tags": [tag1, tag2, ...]
+}
+```
+
+Different message bus has different topic prefix to construct the full topic
+name. For Fedora, a full topic name could be
+``org.fedoraproject.prod.mts.build.tagged``. For internal UMB, it could be
+``VirtualTopic.eng.mts.build.tagged``.
+
 ## Enviornment Variables
 
 ### MTS_DRY_RUN

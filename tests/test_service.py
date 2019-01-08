@@ -180,6 +180,7 @@ data:
         with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
             rule_defs = read_rule_defs()
             tagging_service.handle(rule_defs, {
+                'id': 1,
                 'name': 'javapackages-tools',
                 'stream': '1',
                 'version': '1',
@@ -195,10 +196,11 @@ data:
             ], any_order=True)
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('message_tagging_service.messaging.publish')
     @patch('koji.ClientSession')
     @patch('koji.read_config')
     def test_tag_build_if_multiple_rules_are_matched(
-            self, read_config, ClientSession, retrieve_modulemd_content):
+            self, read_config, ClientSession, publish, retrieve_modulemd_content):
         # Note that, {development: true} is added. That will causes this module
         # matches a second rule as well.
         retrieve_modulemd_content.return_value = '''\
@@ -222,6 +224,7 @@ data:
         with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
             rule_defs = read_rule_defs()
             tagging_service.handle(rule_defs, {
+                'id': 1,
                 'name': 'javapackages-tools',
                 'stream': '1',
                 'version': '1',
@@ -230,8 +233,24 @@ data:
             })
 
             session = ClientSession.return_value
+            session.tagBuild.side_effect = [1, 2]  # Task ids
             nvr = 'javapackages-tools-1-1.c1'
             session.tagBuild.assert_has_calls([
                 call('modular-development-builds', nvr),
                 call('modular-fallback-tag', nvr),
             ], any_order=True)
+
+            publish.assert_called_once_with('build.tagged', {
+                'build': {
+                    'id': 1,
+                    'name': 'javapackages-tools',
+                    'stream': '1',
+                    'version': '1',
+                    'context': 'c1',
+                },
+                'nvr': nvr,
+                'destination_tags': [
+                    'modular-development-builds',
+                    'modular-fallback-tag',
+                ]
+            })

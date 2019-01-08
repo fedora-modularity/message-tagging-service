@@ -28,6 +28,7 @@ import yaml
 
 from operator import truth
 
+from message_tagging_service import messaging
 from message_tagging_service.mts_config import mts_conf
 from message_tagging_service.utils import retrieve_modulemd_content
 
@@ -275,6 +276,18 @@ class RuleDef(object):
 
 
 def tag_build(nvr, dest_tags):
+    """Tag build with specific tags
+
+    Calling Koji API to tag build might fail, however successful tagged tag will
+    be returned and to log the failed tag operation.
+
+    :param str nvr: build NVR.
+    :param dest_tags: tag names.
+    :type dest_tags: list[str]
+    :return: tag names which are tagged to build successfully.
+    :rtype: list[str]
+    """
+    tagged_tags = []
     koji_config = koji.read_config(mts_conf.koji_profile)
     koji_session = koji.ClientSession(koji_config['server'])
     koji_session.krb_login()
@@ -283,7 +296,10 @@ def tag_build(nvr, dest_tags):
             koji_session.tagBuild(tag, nvr)
         except Exception:
             logger.exception('Failed to tag %s to build %s', tag, nvr)
+        else:
+            tagged_tags.append(tag)
     koji_session.logout()
+    return tagged_tags
 
 
 def handle(rule_defs, event_msg):
@@ -311,15 +327,34 @@ def handle(rule_defs, event_msg):
         for rule_def in rule_defs
     )))
 
-    if rule_matches:
-        stream = this_stream.replace('-', '_')
-        nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
-        dest_tags = [item.dest_tag for item in rule_matches]
-        logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
-        if mts_conf.dry_run:
-            logger.info('DRY-RUN: tag build nvr: %s, destination tags: %r',
-                        nvr, dest_tags)
-        else:
-            tag_build(nvr, dest_tags)
-    else:
+    if not rule_matches:
         logger.info('Module build %s does not match any rule.', nsvc)
+        return
+
+    stream = this_stream.replace('-', '_')
+    nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
+    dest_tags = [item.dest_tag for item in rule_matches]
+    logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
+    if mts_conf.dry_run:
+        logger.info('DRY-RUN: tag build nvr: %s, destination tags: %r',
+                    nvr, dest_tags)
+    else:
+        tagged_tags = tag_build(nvr, dest_tags)
+
+        if not tagged_tags:
+            logger.warning(
+                'None of tag(s) %r is tagged to build %s. Skip to send message.',
+                dest_tags, nvr)
+            return
+
+        messaging.publish('build.tagged', {
+            'build': {
+                'id': event_msg['id'],
+                'name': this_name,
+                'stream': this_stream,
+                'version': this_version,
+                'context': this_context,
+            },
+            'nvr': nvr,
+            'destination_tags': tagged_tags,
+        })
