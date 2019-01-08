@@ -293,7 +293,10 @@ def tag_build(nvr, dest_tags):
     koji_session.krb_login()
     for tag in dest_tags:
         try:
-            koji_session.tagBuild(tag, nvr)
+            if mts_conf.dry_run:
+                logger.info('DRY-RUN: koji_session.tagBuild(%s, %s)', tag, nvr)
+            else:
+                koji_session.tagBuild(tag, nvr)
         except Exception:
             logger.exception('Failed to tag %s to build %s', tag, nvr)
         else:
@@ -335,26 +338,23 @@ def handle(rule_defs, event_msg):
     nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
     dest_tags = [item.dest_tag for item in rule_matches]
     logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
-    if mts_conf.dry_run:
-        logger.info('DRY-RUN: tag build nvr: %s, destination tags: %r',
-                    nvr, dest_tags)
-    else:
-        tagged_tags = tag_build(nvr, dest_tags)
 
-        if not tagged_tags:
-            logger.warning(
-                'None of tag(s) %r is tagged to build %s. Skip to send message.',
-                dest_tags, nvr)
-            return
+    tagged_tags = tag_build(nvr, dest_tags)
 
-        messaging.publish('build.tagged', {
-            'build': {
-                'id': event_msg['id'],
-                'name': this_name,
-                'stream': this_stream,
-                'version': this_version,
-                'context': this_context,
-            },
-            'nvr': nvr,
-            'destination_tags': tagged_tags,
-        })
+    if not tagged_tags:
+        logger.warning(
+            'None of tag(s) %r is tagged to build %s. Skip to send message.',
+            dest_tags, nvr)
+        return
+
+    messaging.publish('build.tagged', {
+        'build': {
+            'id': event_msg['id'],
+            'name': this_name,
+            'stream': this_stream,
+            'version': this_version,
+            'context': this_context,
+        },
+        'nvr': nvr,
+        'destination_tags': tagged_tags,
+    })

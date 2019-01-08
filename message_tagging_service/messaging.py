@@ -47,7 +47,11 @@ def _fedmsg_publish(topic, msg):
     # fedmsg doesn't really need access to conf, however other backends do
     import fedmsg
     config = mts_conf.messaging_backends['fedmsg']
-    return fedmsg.publish(topic, msg=msg, modname=config['service'])
+    if mts_conf.dry_run:
+        logger.info('DRY-RUN: fedmsg.publish(%s, msg=%s, modname=%s)',
+                    topic, msg, config['service'])
+    else:
+        return fedmsg.publish(topic, msg=msg, modname=config['service'])
 
 
 def _rhmsg_publish(topic, msg):
@@ -69,11 +73,16 @@ def _rhmsg_publish(topic, msg):
     }
     with AMQProducer(**producer_config) as producer:
         prefix = config['topic_prefix'].rstrip('.')
-        producer.through_topic(f'{prefix}.{topic}')
+        topic = f'{prefix}.{topic}'
+        producer.through_topic(topic)
 
         outgoing_msg = proton.Message()
         outgoing_msg.body = json.dumps(msg)
-        producer.send(outgoing_msg)
+        if mts_conf.dry_run:
+            logger.info('DRY-RUN: AMQProducer.send(%s) through topic %s',
+                        outgoing_msg, topic)
+        else:
+            producer.send(outgoing_msg)
 
 
 _messaging_backends = {
