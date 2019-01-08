@@ -40,7 +40,7 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
     def consume(self, msg):
         logger.debug('Got message: %r', msg)
 
-        event_msg = msg['msg']
+        event_msg = msg['body']['msg']
         if event_msg['state_name'] != 'ready':
             logger.info('Skip module build %s as it is not in ready state yet.',
                         event_msg['koji_tag'])
