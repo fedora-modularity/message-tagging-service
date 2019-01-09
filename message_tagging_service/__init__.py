@@ -19,6 +19,11 @@
 #
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
+import logging
 import message_tagging_service.config
+
+logging.basicConfig(
+    format='%(asctime)s- %(name)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG)
 
 conf = message_tagging_service.config.load_config()
