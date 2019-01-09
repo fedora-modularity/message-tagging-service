@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 config = {
     "validate_signatures": False,
     "active": True,
@@ -16,7 +14,3 @@ config = {
     },
     'relay_inbound': ["tcp://127.0.0.1:2003"],
 }
-
-if 'MTS_DEV' in os.environ:
-    config['endpoints']['relay_outbound'] = ["tcp://fedmsg-relay:4001"]
-    config['relay_inbound'] = ["tcp://fedmsg-relay:2003"]
