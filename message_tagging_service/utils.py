@@ -19,29 +19,28 @@
 #
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
-import koji
 import requests
 import yaml
+import logging
 
 from message_tagging_service import conf
 
+logger = logging.getLogger(__name__)
 
-def retrieve_modulemd_content(name, stream, version, context):
-    """Retrieve and return modulemd.txt from Koji/Brew
 
-    :param str name: module's name.
-    :param str stream: module's stream.
-    :param str version: module's version.
-    :param str context: module's context.
+def retrieve_modulemd_content(module_build_id):
+    """Retrieve and return modulemd.txt from MBS
+
+    :param int module_build_id: module build ID.
     :return: modulemd content.
     :rtype: str
     """
-    koji_config = koji.read_config(conf.koji_profile)
-    url = (f'{koji_config["topurl"]}/{name}/{stream}/{version}.{context}'
-           f'/files/module/modulemd.txt')
-    resp = requests.get(url)
+    api_url = conf.mbs_api_url.rstrip('/')
+    resp = requests.get(f'{api_url}/module-builds/{module_build_id}', params={
+        'verbose': True
+    })
     resp.raise_for_status()
-    return resp.content
+    return resp.json()['modulemd']
 
 
 def read_rule_defs():

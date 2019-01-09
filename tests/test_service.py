@@ -143,6 +143,7 @@ data:
         with patch.object(tagging_service.logger, 'info') as info:
             # Note that, no module property matches rule in rule file.
             tagging_service.handle(rule_defs, {
+                'id': 1,
                 'name': 'ant',
                 'stream': '1',
                 'version': '1',

@@ -6,6 +6,7 @@ import os
 class BaseConfiguration:
     dry_run = os.environ.get('MTS_DRY_RUN', False)
     rule_file = '/etc/mts/mts.module-rules.yaml'
+    mbs_api_url = 'https://mbs.fedoraproject.org/module-build-service/1/'
     koji_profile = 'koji'
     koji_cert = '/etc/mts/msg-tagger.pem'
 
@@ -42,6 +43,7 @@ class BaseConfiguration:
 
 
 class DevConfiguration(BaseConfiguration):
+    mbs_api_url = 'https://mbs.stg.fedoraproject.org/module-build-service/1/'
     koji_profile = 'stg'
     consumer_topics = [
         'org.fedoraproject.dev.mbs.build.state.change'
