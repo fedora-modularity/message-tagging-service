@@ -46,6 +46,6 @@ class DevConfiguration(BaseConfiguration):
     mbs_api_url = 'https://mbs.stg.fedoraproject.org/module-build-service/1/'
     koji_profile = 'stg'
     consumer_topics = [
-        'org.fedoraproject.dev.mbs.build.state.change'
-        'org.fedoraproject.stg.mbs.build.state.change'
+        'org.fedoraproject.dev.mbs.module.state.change',
+        'org.fedoraproject.stg.mbs.module.state.change',
     ]
