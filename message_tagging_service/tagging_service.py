@@ -26,8 +26,6 @@ import re
 import requests
 import yaml
 
-from operator import truth
-
 from message_tagging_service import messaging
 from message_tagging_service import conf
 from message_tagging_service.utils import retrieve_modulemd_content
@@ -121,7 +119,6 @@ class RuleDef(object):
             check_values = mmd_property_value
         else:
             check_values = [mmd_property_value]
-        logger.debug('Checking regex %s against %r', regex, check_values)
         for value in check_values:
             match = re.search(regex, value)
             if match:
@@ -176,16 +173,13 @@ class RuleDef(object):
         for key, value in rule_dict.items():
             new_check_dict = check_dict.get(key)
             if new_check_dict is None:
-                logger.warning('%s is not found in module', key)
+                logger.debug("'%s' is not found in module", key)
                 return False
             if isinstance(value, dict):
-                logger.debug('Checking: %s', key)
                 match = self.find_diff_dict(value, new_check_dict)
             elif isinstance(value, list):
-                logger.debug('Checking: %s', key)
                 match = self.find_diff_list(value, new_check_dict)
             else:
-                logger.debug('Checking: %s', key)
                 match = self.find_diff_value(value, new_check_dict)
             if not match:
                 # As long as one of rule criteria does not match module
@@ -204,62 +198,66 @@ class RuleDef(object):
         :rtype: :class:`RuleMatch`
         """
         if self.rule is None:
-            logger.info('No rule criteria is defined. Build will be tagged to %s',
-                        self.destinations)
+            logger.debug(
+                'No rule criteria is defined. Build will be tagged to %s',
+                self.destinations)
             return RuleMatch(True, self.destinations)
 
         for property, expected in self.rule.items():
-            logger.info('Rule/Value: %s : %s', property, expected)
-
             # Both scratch and development have default value to compare with
             # expected in rule definition.
 
             if property == 'scratch':
                 mmd_value = modulemd['data'].get("scratch", False)
                 if expected == mmd_value:
+                    logger.debug('Rule/Value: %s: %s. Matched.', property, expected)
                     self._property_matches.append(True)
                 else:
-                    logger.debug('scratch is not matched. Expected: %s. Value in modulemd: %s',
-                                 expected, mmd_value)
+                    logger.debug('Rule/Value: %s: %s. Not Matched. Real value: %s',
+                                 property, expected, mmd_value)
                     self._property_matches.append(False)
 
             elif property == 'development':
                 mmd_value = modulemd["data"].get("development", False)
                 if expected == mmd_value:
+                    logger.debug('Rule/Value: %s: %s. Matched.', property, expected)
                     self._property_matches.append(True)
                 else:
-                    logger.debug('development is not matched. Expected: %s. Value in modulemd: %s',
-                                 expected, mmd_value)
+                    logger.debug('Rule/Value: %s: %s. Not Matched. Real value: %s',
+                                 property, expected, mmd_value)
                     self._property_matches.append(False)
 
             else:
                 # Now check rules that have regex
                 value_to_check = modulemd["data"].get(property)
                 if value_to_check is None:
-                    logger.info('%s is not match. Modulemd does not have %s', property, property)
+                    logger.debug('%s is not match. Modulemd does not have %s', property, property)
                     self._property_matches.append(False)
 
                 elif isinstance(expected, dict):
-                    logger.debug('Rule has a dictionary: %r', expected)
                     if self.find_diff_dict(expected, value_to_check[0]):
+                        logger.debug('Rule/Value: %s: %r. Matched.', property, expected)
                         self._property_matches.append(True)
                     else:
-                        logger.info('%s is not matched.', property)
+                        logger.debug('Rule/Value: %s: %r. Not Matched. Real value: %r',
+                                     property, expected, value_to_check[0])
                         self._property_matches.append(False)
 
                 elif isinstance(expected, list):
-                    logger.debug('Rule has a list: %r', expected)
                     if self.find_diff_list(expected, value_to_check):
+                        logger.debug('Rule/Value: %s: %r. Matched.', property, expected)
                         self._property_matches.append(True)
                     else:
-                        logger.info('% is not matched.', property)
+                        logger.debug('Rule/Value: %s: %r. Not Matched. Real value: %s',
+                                     property, expected, value_to_check)
                         self._property_matches.append(False)
 
                 else:
                     if self.find_diff_value(expected, str(value_to_check)):
+                        logger.debug('Rule/Value: %s: %r. Matched.', property, expected)
                         self._property_matches.append(True)
                     else:
-                        logger.info('%s is not matched.', property)
+                        logger.debug('Rule/Value: %s: %r. Not Matched.', property, expected)
                         self._property_matches.append(False)
 
         if all(self._property_matches):
@@ -294,7 +292,7 @@ def tag_build(nvr, dest_tags):
     for tag in dest_tags:
         try:
             if conf.dry_run:
-                logger.info('DRY-RUN: koji_session.tagBuild(%s, %s)', tag, nvr)
+                logger.info("DRY-RUN: koji_session.tagBuild('%s', '%s')", tag, nvr)
             else:
                 koji_session.tagBuild(tag, nvr)
         except Exception:
@@ -324,10 +322,16 @@ def handle(rule_defs, event_msg):
 
     logger.debug('Modulemd file is downloaded and parsed.')
 
-    rule_matches = list(filter(truth, (
-        RuleDef(rule_def).match(modulemd)
-        for rule_def in rule_defs
-    )))
+    rule_matches = []
+    for i, rule_def in enumerate(rule_defs, 1):
+        rd = RuleDef(rule_def)
+        logger.info('[%s] Checking rule definition: %s', i, rd.id)
+        match = rd.match(modulemd)
+        if match:
+            rule_matches.append(match)
+            logger.info('[%d] Rule definition: Matched.', i)
+        else:
+            logger.info('[%d] Rule definition: Not Matched.', i)
 
     if not rule_matches:
         logger.info('Module build %s does not match any rule.', nsvc)
@@ -336,7 +340,7 @@ def handle(rule_defs, event_msg):
     stream = this_stream.replace('-', '_')
     nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
     dest_tags = [item.dest_tag for item in rule_matches]
-    logger.debug('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
+    logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
 
     tagged_tags = tag_build(nvr, dest_tags)
 

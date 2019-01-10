@@ -48,7 +48,7 @@ def _fedmsg_publish(topic, msg):
     import fedmsg
     config = conf.messaging_backends['fedmsg']
     if conf.dry_run:
-        logger.info('DRY-RUN: fedmsg.publish(%s, msg=%s, modname=%s)',
+        logger.info("DRY-RUN: fedmsg.publish('%s', msg=%s, modname='%s')",
                     topic, msg, config['service'])
     else:
         return fedmsg.publish(topic, msg=msg, modname=config['service'])
