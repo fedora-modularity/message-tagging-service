@@ -22,8 +22,8 @@
 import logging
 import message_tagging_service.config
 
+conf = message_tagging_service.config.load_config()
+
 logging.basicConfig(
     format='%(asctime)s- %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG)
-
-conf = message_tagging_service.config.load_config()
+    level=conf.log_level)
