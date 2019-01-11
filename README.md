@@ -1,5 +1,7 @@
 # Message Tagging Service
 
+[![Build Status](https://travis-ci.org/fedora-modularity/message-tagging-service.svg?branch=master)](https://travis-ci.org/fedora-modularity/message-tagging-service)
+
 Message tagging service is a microservice to tag build with proper tags, which
 is triggered by specific message from a message bus. Currently, service
 supports to tag module build according to a module build state change event.
