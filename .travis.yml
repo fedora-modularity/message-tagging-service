@@ -1,0 +1,14 @@
+language: python
+services:
+- docker
+before_install:
+- docker pull registry.fedoraproject.org/fedora:29
+install: true
+script: |
+  docker run --rm -v $(pwd):/code:Z -i -t registry.fedoraproject.org/fedora:29 /bin/bash -c "
+  dnf install -y python36 python3-devel python3-detox gcc redhat-rpm-config rpm-devel krb5-devel
+  cd /code
+  python3 -m venv .env
+  .env/bin/pip install tox
+  .env/bin/tox
+  "
