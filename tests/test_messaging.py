@@ -33,8 +33,8 @@ except ImportError:
 
 class TestMessaging(object):
 
-    @patch.object(messaging.mts_conf, 'messaging_backend', new='fedmsg')
-    @patch.dict(messaging.mts_conf.messaging_backends, values={'fedmsg': {
+    @patch.object(messaging.conf, 'messaging_backend', new='fedmsg')
+    @patch.dict(messaging.conf.messaging_backends, values={'fedmsg': {
         'service': 'myapp'
     }})
     @patch('fedmsg.publish')
@@ -45,8 +45,8 @@ class TestMessaging(object):
             'build.tagged', msg={'build_id': 1}, modname='myapp')
 
     @pytest.mark.skipif(not rhmsg, reason='Library rhmsg is not available.')
-    @patch.object(messaging.mts_conf, 'messaging_backend', new='rhmsg')
-    @patch.dict(messaging.mts_conf.messaging_backends, values={'rhmsg': {
+    @patch.object(messaging.conf, 'messaging_backend', new='rhmsg')
+    @patch.dict(messaging.conf.messaging_backends, values={'rhmsg': {
         'topic_prefix': 'VirtualTopic.eng.mts.',
         'brokers': ['amqps://broker1/', 'amqps://broker2/'],
         'certificate': '/path/to/certificate',
@@ -72,7 +72,7 @@ class TestMessaging(object):
         Message.return_value.body = json.dumps(msg)
         producer.send.assert_called_once_with(Message.return_value)
 
-    @patch.object(messaging.mts_conf, 'messaging_backend', new='anothercool')
+    @patch.object(messaging.conf, 'messaging_backend', new='anothercool')
     def test_no_backend_handler_is_found(self):
         with pytest.raises(KeyError):
             messaging.publish('topic', {})

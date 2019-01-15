@@ -137,7 +137,7 @@ data:
 '''
 
         rule_file = os.path.join(test_data_dir, 'mts-test-for-no-match.yaml')
-        with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
+        with patch.object(tagging_service.conf, 'rule_file', new=rule_file):
             rule_defs = read_rule_defs()
 
         with patch.object(tagging_service.logger, 'info') as info:
@@ -177,7 +177,7 @@ data:
 '''
 
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
+        with patch.object(tagging_service.conf, 'rule_file', new=rule_file):
             rule_defs = read_rule_defs()
             tagging_service.handle(rule_defs, {
                 'id': 1,
@@ -221,7 +221,7 @@ data:
 '''
 
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch.object(tagging_service.mts_conf, 'rule_file', new=rule_file):
+        with patch.object(tagging_service.conf, 'rule_file', new=rule_file):
             rule_defs = read_rule_defs()
             tagging_service.handle(rule_defs, {
                 'id': 1,

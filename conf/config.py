@@ -47,9 +47,3 @@ class DevConfiguration(BaseConfiguration):
         'org.fedoraproject.dev.mbs.build.state.change'
         'org.fedoraproject.stg.mbs.build.state.change'
     ]
-
-
-if 'MTS_DEV' in os.environ:
-    mts_conf = DevConfiguration()
-else:
-    mts_conf = BaseConfiguration()
