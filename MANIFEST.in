@@ -1,2 +1,2 @@
 include README.md LICENSE
-include rules/*.yaml
+include rules/*.yaml tests/data/* conf/*.py fedmsg.d/*.py

@@ -29,7 +29,7 @@ import yaml
 from operator import truth
 
 from message_tagging_service import messaging
-from message_tagging_service.mts_config import mts_conf
+from message_tagging_service import conf
 from message_tagging_service.utils import retrieve_modulemd_content
 
 logger = logging.getLogger(__name__)
@@ -288,12 +288,12 @@ def tag_build(nvr, dest_tags):
     :rtype: list[str]
     """
     tagged_tags = []
-    koji_config = koji.read_config(mts_conf.koji_profile)
+    koji_config = koji.read_config(conf.koji_profile)
     koji_session = koji.ClientSession(koji_config['server'])
     koji_session.krb_login()
     for tag in dest_tags:
         try:
-            if mts_conf.dry_run:
+            if conf.dry_run:
                 logger.info('DRY-RUN: koji_session.tagBuild(%s, %s)', tag, nvr)
             else:
                 koji_session.tagBuild(tag, nvr)

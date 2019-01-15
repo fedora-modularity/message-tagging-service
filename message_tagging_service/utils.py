@@ -23,7 +23,7 @@ import koji
 import requests
 import yaml
 
-from message_tagging_service.mts_config import mts_conf
+from message_tagging_service import conf
 
 
 def retrieve_modulemd_content(name, stream, version, context):
@@ -36,7 +36,7 @@ def retrieve_modulemd_content(name, stream, version, context):
     :return: modulemd content.
     :rtype: str
     """
-    koji_config = koji.read_config(mts_conf.koji_profile)
+    koji_config = koji.read_config(conf.koji_profile)
     url = (f'{koji_config["topurl"]}/{name}/{stream}/{version}.{context}'
            f'/files/module/modulemd.txt')
     resp = requests.get(url)
@@ -51,5 +51,5 @@ def read_rule_defs():
         a mapping.
     :rtype: dict
     """
-    with open(mts_conf.rule_file, 'r') as f:
+    with open(conf.rule_file, 'r') as f:
         return yaml.safe_load(f)

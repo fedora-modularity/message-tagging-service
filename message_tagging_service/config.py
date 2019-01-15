@@ -19,31 +19,32 @@
 #
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
-import fedmsg.consumers
-import logging
 
-from message_tagging_service import conf
-from message_tagging_service import tagging_service
-from message_tagging_service.utils import read_rule_defs
-
-logger = logging.getLogger(__name__)
+import importlib.machinery
+import os
+import sys
 
 
-class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
-    topic = conf.consumer_topics
-    config_key = 'mts-consumer'
+running_tests = any('py.test' in arg for arg in sys.argv)
 
-    def __init__(self, *args, **kwargs):
-        super(MTSConsumer, self).__init__(*args, **kwargs)
-        self.rule_defs = read_rule_defs()
 
-    def consume(self, msg):
-        logger.debug('Got message: %r', msg)
+def get_config_file():
+    config_file = os.environ.get('MTS_CONFIG_FILE')
+    if config_file:
+        return config_file
+    elif 'MTS_DEV' in os.environ or running_tests:
+        # Use {project root directory}/conf/config.py
+        return os.path.realpath(
+            os.path.join(os.path.dirname(__file__), '..', 'conf', 'config.py'))
+    else:
+        return '/etc/mts/config.py'
 
-        event_msg = msg['body']['msg']
-        if event_msg['state_name'] != 'ready':
-            logger.info('Skip module build %s as it is not in ready state yet.',
-                        event_msg['koji_tag'])
-            return
 
-        tagging_service.handle(self.rule_defs, event_msg)
+def load_config():
+    config_file = get_config_file()
+    loader = importlib.machinery.SourceFileLoader('mts_conf', config_file)
+    mod = loader.load_module()
+    if 'MTS_DEV' in os.environ:
+        return mod.DevConfiguration()
+    else:
+        return mod.BaseConfiguration()

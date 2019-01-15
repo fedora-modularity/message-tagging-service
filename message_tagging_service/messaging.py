@@ -22,7 +22,7 @@
 import logging
 import json
 
-from message_tagging_service.mts_config import mts_conf
+from message_tagging_service import conf
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def publish(topic, msg):
     :param dict msg: the message contents of the message (typically JSON)
     :return: the value returned from underlying backend "send" method.
     """
-    backend = mts_conf.messaging_backend
+    backend = conf.messaging_backend
     try:
         handler = _messaging_backends[backend]['publish']
     except KeyError:
@@ -46,8 +46,8 @@ def publish(topic, msg):
 def _fedmsg_publish(topic, msg):
     # fedmsg doesn't really need access to conf, however other backends do
     import fedmsg
-    config = mts_conf.messaging_backends['fedmsg']
-    if mts_conf.dry_run:
+    config = conf.messaging_backends['fedmsg']
+    if conf.dry_run:
         logger.info('DRY-RUN: fedmsg.publish(%s, msg=%s, modname=%s)',
                     topic, msg, config['service'])
     else:
@@ -64,7 +64,7 @@ def _rhmsg_publish(topic, msg):
     import proton
     from rhmsg.activemq.producer import AMQProducer
 
-    config = mts_conf.messaging_backends['rhmsg']
+    config = conf.messaging_backends['rhmsg']
     producer_config = {
         'urls': config['brokers'],
         'certificate': config['certificate'],
@@ -78,7 +78,7 @@ def _rhmsg_publish(topic, msg):
 
         outgoing_msg = proton.Message()
         outgoing_msg.body = json.dumps(msg)
-        if mts_conf.dry_run:
+        if conf.dry_run:
             logger.info('DRY-RUN: AMQProducer.send(%s) through topic %s',
                         outgoing_msg, topic)
         else:
