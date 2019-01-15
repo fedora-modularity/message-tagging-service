@@ -3,7 +3,7 @@ services:
 - docker
 before_install:
 - docker pull registry.fedoraproject.org/fedora:29
-install: true
+install: pip install coveralls
 script: |
   docker run --rm -v $(pwd):/code:Z -i -t registry.fedoraproject.org/fedora:29 /bin/bash -c "
   dnf install -y python36 python3-devel python3-detox gcc redhat-rpm-config rpm-devel krb5-devel
@@ -12,3 +12,7 @@ script: |
   .env/bin/pip install tox
   .env/bin/tox
   "
+after_success:
+- sudo chown travis:travis .coverage
+- sed -i -e s@/code@"$(pwd)"@g .coverage
+- coveralls
