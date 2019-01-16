@@ -17,7 +17,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Authors: Chenxiong Qi <cqi@redhat.com>
+# Authors: Chenxiong Qi <cqi@redhat.com>, Valerij Maljulin <vmaljuli@redhat.com>
 
 
 import importlib.machinery
@@ -28,23 +28,120 @@ import sys
 running_tests = any('py.test' in arg for arg in sys.argv)
 
 
-def get_config_file():
-    config_file = os.environ.get('MTS_CONFIG_FILE')
-    if config_file:
-        return config_file
-    elif 'MTS_DEV' in os.environ or running_tests:
-        # Use {project root directory}/conf/config.py
-        return os.path.realpath(
-            os.path.join(os.path.dirname(__file__), '..', 'conf', 'config.py'))
-    else:
-        return '/etc/mts/config.py'
+class Config:
+    """
+    This class allows to instanciate configuration. It has 3 types of properties
+        (starting from the least priority):
+    - default properties - set as members of dictionary __defaults to this class
+        (common for all instances)
+    - class properties - properties of configuration class from configuration file (__conf_class)
+    - overrided properties - properties changed in runtime
+    All properties could be read using instance.name or instance['name'] form.
+    Setting a new value to instance['name'] will override the value of property
+        (but only for this particular instance)
+    """
+    __defaults = {}
 
+    def __init__(self, config_file=None, config_class=None):
+        """
+        Initialize config, read sets configuration class from configuration file
+        :param config_file: force configuration file path
+        :type config_file: str
+        :param config_class: force class name in configuration file
+        :type config_class: str
+        """
+        if not config_file:
+            config_file = self.get_config_file()
+        loader = importlib.machinery.SourceFileLoader('mts_conf', config_file)
+        mod = loader.load_module()
+        if not config_class:
+            config_class = self.get_config_class_name()
+        if getattr(mod, config_class, None) is not None:
+            self.__conf_class = getattr(mod, config_class)
+        else:
+            raise AttributeError(f'Configuration class {config_class} '
+                                 f'not found in configuration file {config_file}')
+        self.__overrides = {}
 
-def load_config():
-    config_file = get_config_file()
-    loader = importlib.machinery.SourceFileLoader('mts_conf', config_file)
-    mod = loader.load_module()
-    if 'MTS_DEV' in os.environ:
-        return mod.DevConfiguration()
-    else:
-        return mod.BaseConfiguration()
+    @staticmethod
+    def get_config_file():
+        """
+        Trying to get information about config file. Lookup through:
+        1. Value of MTS_CONFIG_FILE environmental variable
+        2. Try development configuration if MTS_DEV is set or in tests mode
+        3. Default configuration path /etc/mts/config.py
+        :return: file path
+        :rtype: str
+        """
+        config_file = os.environ.get('MTS_CONFIG_FILE')
+        if config_file:
+            return config_file
+        elif 'MTS_DEV' in os.environ or running_tests:
+            # Use {project root directory}/conf/config.py
+            return os.path.realpath(
+                os.path.join(os.path.dirname(__file__), '..', 'conf', 'config.py'))
+        else:
+            return '/etc/mts/config.py'
+
+    @staticmethod
+    def get_config_class_name():
+        """
+        Determine a class name according to running mode
+        :return: class name
+        :rtype: str
+        """
+        if running_tests:
+            return 'TestConfiguration'
+        elif 'MTS_DEV' in os.environ:
+            return 'DevConfiguration'
+        else:
+            return 'BaseConfiguration'
+
+    def __getattr__(self, item):
+        """
+        Allows to access configuration parameters as instance.item
+        :param item: item name
+        :type item: str
+        :return: item value
+        """
+        # check overrides first:
+        if self.__overrides.get(item) is not None:
+            return self.__overrides[item]
+        # trying configuration class then
+        if getattr(self.__conf_class, item) is not None:
+            return getattr(self.__conf_class, item)
+        # fallback to defaults if any
+        if self.__defaults.get(item) is not None:
+            return self.__defaults[item]
+        raise KeyError('Parameter {par_name} not found in configuration.'.format(par_name=item))
+
+    def __getitem__(self, item):
+        """
+        Allows to access configuration parameters as instance['item']
+        :param item: item name
+        :return: item value
+        """
+        # check overrides first:
+        if self.__overrides.get(item) is not None:
+            return self.__overrides[item]
+        # trying configuration class then
+        if getattr(self.__conf_class, item) is not None:
+            return getattr(self.__conf_class, item)
+        # fallback to defaults if any
+        if self.__defaults.get(item) is not None:
+            return self.__defaults[item]
+        raise KeyError('Parameter {par_name} not found in configuration.'.format(par_name=item))
+
+    def __setitem__(self, key, value):
+        """
+        Value can be overrided using instance['key'] = value
+        :param key: item name
+        :type key: str
+        :param value: new value
+        :return: None
+        """
+        self.__overrides[key] = value
+
+    @property
+    def conf_class(self):
+        return self.__conf_class

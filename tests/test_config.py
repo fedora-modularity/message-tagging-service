@@ -33,19 +33,19 @@ class TestGetConfigFile(object):
 
     @patch.dict('os.environ', values={'MTS_CONFIG_FILE': test_config})
     def test_use_specified_config_file(self):
-        conf = config.load_config()
+        conf = config.Config()
         assert conf.test
 
     @patch.dict('os.environ', values={'MTS_DEV': '1'})
     def test_use_config_from_source_code(self):
-        conf = config.load_config()
-        assert 'DevConfiguration' == conf.__class__.__name__
+        conf = config.Config()
+        assert 'TestConfiguration' == conf.conf_class.__name__
 
     @patch.dict('os.environ', clear=True)
     @patch.object(config, 'running_tests', new=False)
     @patch('importlib.machinery')
     def test_use_installed_config(self, machinery):
-        conf = config.load_config()
+        conf = config.Config()
 
         machinery.SourceFileLoader.assert_called_once_with(
             'mts_conf',
@@ -53,4 +53,4 @@ class TestGetConfigFile(object):
 
         loader = machinery.SourceFileLoader.return_value
         mod = loader.load_module.return_value
-        assert conf == mod.BaseConfiguration.return_value
+        assert conf.conf_class == mod.BaseConfiguration
