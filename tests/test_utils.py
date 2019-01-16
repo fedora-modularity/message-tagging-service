@@ -33,13 +33,14 @@ class TestRetrieveModulemdContent(object):
     @patch('requests.get')
     def test_retrieve_the_content(self, get):
         get.return_value = Mock(status_code=200)
+        fake_modulemd = 'modulemd conent'
         get.return_value.json.return_value = {
-            'modulemd': 'modulemd content'
+            'modulemd': fake_modulemd,
         }
 
         modulemd = utils.retrieve_modulemd_content(1)
 
-        assert 'modulemd content' == modulemd
+        assert fake_modulemd == modulemd
         get.assert_called_once_with(
             'https://mbs.local/module-builds/1',
             params={'verbose': True})

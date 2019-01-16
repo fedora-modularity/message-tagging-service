@@ -311,8 +311,7 @@ def handle(rule_defs, event_msg):
     nsvc = f"{this_name}-{this_stream}-{this_version}-{this_context}"
 
     try:
-        modulemd = retrieve_modulemd_content(event_msg['id'])
-        modulemd = yaml.safe_load(modulemd)
+        modulemd = yaml.safe_load(retrieve_modulemd_content(event_msg['id']))
     except requests.exceptions.HTTPError as e:
         logger.exception(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
 
