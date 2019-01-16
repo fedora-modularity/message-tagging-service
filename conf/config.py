@@ -59,3 +59,7 @@ class DevConfiguration(BaseConfiguration):
         'https://raw.githubusercontent.com/fedora-modularity/message-tagging-service/'
         'master/rules/mts-rules.yaml'
     )
+
+
+class TestConfiguration(DevConfiguration):
+    pass

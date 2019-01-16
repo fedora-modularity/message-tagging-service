@@ -20,9 +20,9 @@
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
 import logging
-import message_tagging_service.config
+from message_tagging_service import config
 
-conf = message_tagging_service.config.load_config()
+conf = config.Config()
 
 logging.basicConfig(
     format='%(asctime)s- %(name)s - %(levelname)s - %(message)s',
