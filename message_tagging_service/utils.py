@@ -50,5 +50,6 @@ def read_rule_defs():
         a mapping.
     :rtype: dict
     """
-    with open(conf.rule_file, 'r') as f:
-        return yaml.safe_load(f)
+    r = requests.get(conf.rules_file_url)
+    r.raise_for_status()
+    return yaml.safe_load(r.text)

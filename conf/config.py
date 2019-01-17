@@ -5,7 +5,6 @@ import os
 
 class BaseConfiguration:
     dry_run = os.environ.get('MTS_DRY_RUN', False)
-    rule_file = '/etc/mts/mts.module-rules.yaml'
     mbs_api_url = 'https://mbs.fedoraproject.org/module-build-service/1/'
     koji_profile = 'koji'
     koji_cert = '/etc/mts/msg-tagger.pem'
@@ -44,6 +43,10 @@ class BaseConfiguration:
     # Default is INFO. Refer to Python logging module to know valid values.
     log_level = 'INFO'
 
+    # A URL of rules file which can be accessible via HTTP GET without authentication.
+    # Example: https://example.com/rules/mts-rules.yaml
+    rules_file_url = ''
+
 
 class DevConfiguration(BaseConfiguration):
     koji_profile = 'stg'
@@ -52,3 +55,7 @@ class DevConfiguration(BaseConfiguration):
         'org.fedoraproject.stg.mbs.module.state.change',
     ]
     log_level = 'DEBUG'
+    rules_file_url = (
+        'https://raw.githubusercontent.com/fedora-modularity/message-tagging-service/'
+        'master/rules/mts-rules.yaml'
+    )

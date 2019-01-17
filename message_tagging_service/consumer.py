@@ -21,6 +21,7 @@
 
 import fedmsg.consumers
 import logging
+import requests
 
 from message_tagging_service import conf
 from message_tagging_service import tagging_service
@@ -35,7 +36,6 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
 
     def __init__(self, *args, **kwargs):
         super(MTSConsumer, self).__init__(*args, **kwargs)
-        self.rule_defs = read_rule_defs()
 
     def consume(self, msg):
         logger.debug('Got message: %r', msg)
@@ -46,4 +46,9 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
                         event_msg['koji_tag'])
             return
 
-        tagging_service.handle(self.rule_defs, event_msg)
+        try:
+            rule_defs = read_rule_defs()
+        except requests.exceptions.HTTPError:
+            logger.exception('Failed to retrieve rules content.')
+        else:
+            tagging_service.handle(rule_defs, event_msg)
