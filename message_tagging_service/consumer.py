@@ -51,4 +51,7 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
         except requests.exceptions.HTTPError:
             logger.exception('Failed to retrieve rules content.')
         else:
-            tagging_service.handle(rule_defs, event_msg)
+            # For an empty yaml file, YAML returns None. So, if the remote rule
+            # file is empty, catch this case and skip to handle the tag.
+            if rule_defs is not None:
+                tagging_service.handle(rule_defs, event_msg)

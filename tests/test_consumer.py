@@ -58,3 +58,16 @@ class TestConsumer(object):
         }}})
 
         handle.assert_not_called()
+
+    @patch('requests.get')
+    @patch.object(consumer.tagging_service, 'handle')
+    def test_skip_if_rule_file_is_empty(self, handle, get):
+        get.return_value.text = '---'
+
+        consumer = self.new_consumer()
+        consumer.consume({'body': {'msg': {
+            'state_name': 'ready',
+            'koji_tag': 'module-modulea-1-1-c1',
+        }}})
+
+        handle.assert_not_called()
