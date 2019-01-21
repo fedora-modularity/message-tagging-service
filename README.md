@@ -1,5 +1,8 @@
 # Message Tagging Service
 
+![](https://img.shields.io/pypi/v/message-tagging-service.svg?label=PyPI)
+![](https://img.shields.io/pypi/pyversions/message-tagging-service.svg?label=Python)
+![](https://img.shields.io/pypi/l/message-tagging-service.svg?colorB=green&label=License)
 [![Build Status](https://travis-ci.org/fedora-modularity/message-tagging-service.svg?branch=master)](https://travis-ci.org/fedora-modularity/message-tagging-service)
 
 Message tagging service is a microservice to tag build with proper tags, which
@@ -109,3 +112,9 @@ covered by tests. Run tests:
 ```
 tox
 ```
+
+# Chagne Logs
+
+# 0.1 (2019-01-21)
+
+- First release that MTS is able to handle specific message to tag build.
