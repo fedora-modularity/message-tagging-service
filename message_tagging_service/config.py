@@ -42,34 +42,28 @@ class Config:
     """
     __defaults = {}
 
-    def __init__(self, config_file=None, config_class=None):
+    def __init__(self, profile=None, config_file=None, config_class=None):
         """
         Initialize config, read sets configuration class from configuration file
-        :param config_file: force configuration file path
+        :param profile: to be set to config file name
+        :type profile: str
+        :param config_file: force configuration file path (overrides profile setting if present)
         :type config_file: str
         :param config_class: force class name in configuration file
         :type config_class: str
         """
-        if not config_file:
-            config_file = self.get_config_file()
-        loader = importlib.machinery.SourceFileLoader('mts_conf', config_file)
-        mod = loader.load_module()
-        if not config_class:
-            config_class = self.get_config_class_name()
-        if getattr(mod, config_class, None) is not None:
-            self.__conf_class = getattr(mod, config_class)
-        else:
-            raise AttributeError(f'Configuration class {config_class} '
-                                 f'not found in configuration file {config_file}')
         self.__overrides = {}
+        self.load_new_config(profile, config_file, config_class)
 
     @staticmethod
-    def get_config_file():
+    def get_config_file(profile):
         """
         Trying to get information about config file. Lookup through:
         1. Value of MTS_CONFIG_FILE environmental variable
         2. Try development configuration if MTS_DEV is set or in tests mode
         3. Default configuration path /etc/mts/config.py
+        :param profile: profile name to be a part of config file
+        :type profile: str
         :return: file path
         :rtype: str
         """
@@ -81,7 +75,10 @@ class Config:
             return os.path.realpath(
                 os.path.join(os.path.dirname(__file__), '..', 'conf', 'config.py'))
         else:
-            return '/etc/mts/config.py'
+            if profile:
+                return f'/etc/mts/config.{profile}.py'
+            else:
+                return '/etc/mts/config.py'
 
     @staticmethod
     def get_config_class_name():
@@ -96,6 +93,34 @@ class Config:
             return 'DevConfiguration'
         else:
             return 'BaseConfiguration'
+
+    def load_new_config(self, profile=None, config_file=None, config_class=None,
+                        keep_overrides=False):
+        """
+        Reloads a base file from a config class
+        :param profile: to be set to config file name
+        :type profile: str
+        :param config_file: force configuration file path (overrides profile setting if present)
+        :type config_file: str
+        :param config_class: force class name in configuration file
+        :type config_class: str
+        :param keep_overrides: keep overrided values if True
+        :type keep_overrides: bool
+        :return:
+        """
+        if not config_file:
+            config_file = self.get_config_file(profile=profile)
+        loader = importlib.machinery.SourceFileLoader('mts_conf', config_file)
+        mod = loader.load_module()
+        if not config_class:
+            config_class = self.get_config_class_name()
+        if getattr(mod, config_class, None) is not None:
+            self.__conf_class = getattr(mod, config_class)
+        else:
+            raise AttributeError(f'Configuration class {config_class} '
+                                 f'not found in configuration file {config_file}')
+        if not keep_overrides:
+            self.__overrides.clear()
 
     def __getattr__(self, item):
         """
