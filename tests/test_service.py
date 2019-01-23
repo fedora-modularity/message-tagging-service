@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import pytest
 
 from mock import Mock
 from mock import call
@@ -10,6 +11,18 @@ from message_tagging_service import tagging_service
 from message_tagging_service.utils import read_rule_defs
 
 test_data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
+
+# Fake koji config returned from koji.read_config that ensures krb_login is
+# called successfully.
+koji_config_krb_auth = {
+    'authtype': 'kerberos',
+    'debug': False,
+    'server': 'http://localhost/',
+    'cert': '',
+    'keytab': None,
+    'principal': None,
+}
 
 
 class TestRuleDefinitionCheck(object):
@@ -162,6 +175,8 @@ data:
     @patch('koji.read_config')
     def test_tag_build_if_match_one_rule_only(
             self, read_config, ClientSession, retrieve_modulemd_content):
+        read_config.return_value = koji_config_krb_auth
+
         # Note that, platform does not match the rule in rule file.
         retrieve_modulemd_content.return_value = '''\
 ---
@@ -207,6 +222,8 @@ data:
     @patch('koji.read_config')
     def test_tag_build_if_multiple_rules_are_matched(
             self, read_config, ClientSession, publish, retrieve_modulemd_content):
+        read_config.return_value = koji_config_krb_auth
+
         # Note that, {development: true} is added. That will causes this module
         # matches a second rule as well.
         retrieve_modulemd_content.return_value = '''\
@@ -262,4 +279,61 @@ data:
                     'modular-development-builds',
                     'modular-fallback-tag',
                 ]
+            })
+
+
+class TestLoginKoji(object):
+    """Test login_koji"""
+
+    @patch.object(tagging_service.conf, 'koji_cert', new='path/to/cert')
+    @patch('os.path.exists', return_value=True)
+    @patch('os.access', return_value=True)
+    def test_ssl_login(self, access, exists):
+        session = Mock()
+        # Ensure koji_cli.lib.activate_session completes API version check.
+        session.getAPIVersion.return_value = 1
+
+        tagging_service.login_koji(session, {
+            'authtype': 'kerberos',
+            'serverca': '',
+            'debug': False,
+        })
+
+        session.ssl_login.assert_called_once_with(
+            'path/to/cert', None, '', proxyuser=None)
+
+    @pytest.mark.parametrize("keytab,principal,krb_login_kwargs", [
+        (None, None, {'proxyuser': None}),
+        ('path/to/keytab', None, {'proxyuser': None}),
+        (None, 'mts/hostname@EXAMPLE.COM', {'proxyuser': None}),
+        ('path/to/keytab', 'mts/hostname@EXAMPLE.COM', {
+            'keytab': 'path/to/keytab',
+            'principal': 'mts/hostname@EXAMPLE.COM',
+            'proxyuser': None
+        }),
+    ])
+    @patch('os.path.exists', return_value=True)
+    @patch('os.access', return_value=True)
+    def test_krb_login(self, access, exists, keytab, principal, krb_login_kwargs):
+        session = Mock()
+        session.getAPIVersion.return_value = 1
+
+        with patch.object(tagging_service.conf, 'keytab', new=keytab):
+            with patch.object(tagging_service.conf, 'principal', new=principal):
+                tagging_service.login_koji(session, koji_config_krb_auth)
+
+        session.krb_login.assert_called_once_with(**krb_login_kwargs)
+
+    @patch.object(tagging_service.conf, 'koji_cert', new='path/to/cert')
+    def test_raise_error_if_ssl_cert_is_not_readable(self):
+        session = Mock()
+        # Ensure koji_cli.lib.activate_session completes API version check.
+        session.getAPIVersion.return_value = 1
+
+        with pytest.raises(
+                IOError, message='SSL certificate path/to/cert is not readable.'):
+            tagging_service.login_koji(session, {
+                'authtype': 'kerberos',
+                'serverca': '',
+                'debug': False,
             })

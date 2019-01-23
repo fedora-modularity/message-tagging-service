@@ -23,6 +23,7 @@
 import koji
 import koji_cli.lib
 import logging
+import os
 import re
 import requests
 import yaml
@@ -274,6 +275,42 @@ class RuleDef(object):
             return RuleMatch(False)
 
 
+def login_koji(session, config):
+    """Log into Koji
+
+    By default, client is authenticated via Kerberos, which is set in Koji
+    configuration. However, it could be changed to autheticate client via SSL
+    by setting ``koji_cert`` in MTS configuration.
+
+    Please note that, only both ``keytab`` and ``principal`` are set in
+    configuration, the session could be logged in with a specific keytab.
+
+    :param session: an object of ClientSession to login.
+    :type session: koji.ClientSession
+    :param dict config: a mapping containing koji config. Generally, it is the
+        return value from ``koji.read_config``.
+    """
+    # Loaded koji config is a simple dict without nested dict. dict.copy just
+    # works well.
+    cfg = config.copy()
+    use_ssl = conf.koji_cert is not None
+    if use_ssl:
+        if os.path.exists(conf.koji_cert) and os.access(conf.koji_cert, os.R_OK):
+            logger.info('conf.koji_cert is set. Use ssl authtype.')
+            cfg['cert'] = conf.koji_cert
+            cfg['authtype'] = 'ssl'
+        else:
+            raise IOError(f'SSL certificate {conf.koji_cert} is not readable.')
+    else:
+        # otherwise, do the default authtype: kerberos
+        if (conf.keytab and os.path.exists(conf.keytab) and
+                os.access(conf.keytab, os.R_OK) and conf.principal):
+            cfg['keytab'] = conf.keytab
+            cfg['principal'] = conf.principal
+
+    return koji_cli.lib.activate_session(session, cfg)
+
+
 def tag_build(nvr, dest_tags):
     """Tag build with specific tags
 
@@ -288,12 +325,9 @@ def tag_build(nvr, dest_tags):
     """
     tagged_tags = []
     koji_config = koji.read_config(conf.koji_profile)
-    koji_session = koji.ClientSession(koji_config['server'])
-    # Let koji to handle the login. It defaults to do Kerberos authentication.
-    # But, by changing Koji config or overwrite the default, for example, set
-    # authtype to ssl and cert to a path of a cert file, koji API will login
-    # with SSL.
-    koji_cli.lib.activate_session(koji_session, koji_config)
+    session_opts = koji.grab_session_options(koji_config)
+    koji_session = koji.ClientSession(koji_config['server'], opts=session_opts)
+    login_koji(koji_session, koji_config)
     for tag in dest_tags:
         try:
             if conf.dry_run:
