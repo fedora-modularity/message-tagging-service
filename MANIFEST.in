@@ -1,3 +1,3 @@
-include README.md LICENSE
+include LICENSE
 include requirements.txt dev-requirements.txt
 include rules/*.yaml tests/data/* conf/*.py fedmsg.d/*.py
