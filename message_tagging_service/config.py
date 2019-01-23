@@ -129,16 +129,10 @@ class Config:
         :type item: str
         :return: item value
         """
-        # check overrides first:
-        if self.__overrides.get(item) is not None:
-            return self.__overrides[item]
-        # trying configuration class then
-        if getattr(self.__conf_class, item) is not None:
-            return getattr(self.__conf_class, item)
-        # fallback to defaults if any
-        if self.__defaults.get(item) is not None:
-            return self.__defaults[item]
-        raise KeyError('Parameter {par_name} not found in configuration.'.format(par_name=item))
+        try:
+            return self[item]
+        except KeyError as exc:
+            raise AttributeError(f'Parameter {item} not found in configuration.') from exc
 
     def __getitem__(self, item):
         """
@@ -155,7 +149,7 @@ class Config:
         # fallback to defaults if any
         if self.__defaults.get(item) is not None:
             return self.__defaults[item]
-        raise KeyError('Parameter {par_name} not found in configuration.'.format(par_name=item))
+        raise KeyError(f'Parameter {item} not found in configuration.')
 
     def __setitem__(self, key, value):
         """
