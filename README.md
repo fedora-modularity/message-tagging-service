@@ -43,6 +43,10 @@ There are two type of configurations.
   running in production. ``DevConfiguration`` contains anything for running in
   development mode.
 
+- Koji login authentication method. It defaults to Kerberos, which is set in
+  default ``koji`` profile. It could be changed to other ``authtype``, for
+  example ``ssl``. Please note that, ``cert`` has to be set as well for ``ssl``.
+
 ## Messaging
 
 Once tags are applied to a build successfully, a message will be sent to topic

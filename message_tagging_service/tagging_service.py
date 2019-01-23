@@ -21,6 +21,7 @@
 #          Chenxiong Qi <cqi@redhat.com>
 
 import koji
+import koji_cli.lib
 import logging
 import re
 import requests
@@ -288,7 +289,11 @@ def tag_build(nvr, dest_tags):
     tagged_tags = []
     koji_config = koji.read_config(conf.koji_profile)
     koji_session = koji.ClientSession(koji_config['server'])
-    koji_session.krb_login()
+    # Let koji to handle the login. It defaults to do Kerberos authentication.
+    # But, by changing Koji config or overwrite the default, for example, set
+    # authtype to ssl and cert to a path of a cert file, koji API will login
+    # with SSL.
+    koji_cli.lib.activate_session(koji_session, koji_config)
     for tag in dest_tags:
         try:
             if conf.dry_run:
