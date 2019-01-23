@@ -6,8 +6,26 @@ import os
 class BaseConfiguration:
     dry_run = os.environ.get('MTS_DRY_RUN', False)
     mbs_api_url = 'https://mbs.fedoraproject.org/module-build-service/1/'
+
     koji_profile = 'koji'
-    koji_cert = '/etc/mts/msg-tagger.pem'
+
+    # User for ssl authtype to log into Koji.
+    # In Koji configuration, kerberos is the default authtype. If this is set,
+    # ssl authtype will be used instead.
+    # A workable value could be '/etc/mts/msg-tagger.pem'
+    koji_cert = None
+
+    # Used for kerberos authtype to log into Koji.
+    # Example: '/etc/mts/mts.keytab'
+    keytab = None
+    # MTS host principal inside the keytab. If keytab is specified to use a
+    # keytab explicitly, principal must be set as well.
+    # Example: 'mts/hostname@EXAMPLE.COM'
+    principal = None
+
+    # Please note that, if neither keytab nor principal is set or valid, the
+    # default or configured Kerberos ccache will be used to get ticket. That
+    # means kinit should be run with the keytab and principal in advance.
 
     # Messages sent to these topics will be handled.
     # For internal, it is set to a UMB queue name, for example,
