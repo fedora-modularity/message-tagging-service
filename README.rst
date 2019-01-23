@@ -94,18 +94,18 @@ MTS_DEV
 
 Switch service to run in development mode as long as ``MTS_DEV`` is defined.
 
-MTS_RH
-~~~~~~
+MTS_USE_STOMP
+~~~~~~~~~~~~~
 
 Make service run with internal infrastructure. No particular value is required.
-Just define ``MTS_RH`` in environment variables.
+Just define ``MTS_USE_STOMP`` in environment variables.
 
 MTS_STOMP_URI
 ~~~~~~~~~~~~~
 
 A comma-separated string of UMB broker URIs. For example::
 
-    'messaging-broker01.dev1.redhat.com,messaging-broker02.dev2.redhat.com'
+   'messaging-broker01.dev1.example.com,messaging-broker02.dev2.example.com'
 
 MTS_STOMP_CRT
 ~~~~~~~~~~~~~
