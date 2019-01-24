@@ -29,7 +29,7 @@ test_config = os.path.join(os.path.dirname(__file__),
                            'config.py')
 
 
-class TestGetConfigFile(object):
+class TestConfig(object):
 
     @patch.dict('os.environ', values={'MTS_CONFIG_FILE': test_config})
     def test_use_specified_config_file(self):
@@ -37,9 +37,15 @@ class TestGetConfigFile(object):
         assert conf.test
 
     @patch.dict('os.environ', values={'MTS_DEV': '1'})
-    def test_use_config_from_source_code(self):
+    def test_test_config(self):
         conf = config.Config()
         assert 'TestConfiguration' == conf.conf_class.__name__
+
+    @patch.dict('os.environ', values={'MTS_DEV': '1'})
+    @patch.object(config, 'running_tests', new=False)
+    def test_dev_config(self):
+        conf = config.Config()
+        assert 'DevConfiguration' == conf.conf_class.__name__
 
     @patch.dict('os.environ', clear=True)
     @patch.object(config, 'running_tests', new=False)
@@ -54,3 +60,37 @@ class TestGetConfigFile(object):
         loader = machinery.SourceFileLoader.return_value
         mod = loader.load_module.return_value
         assert conf.conf_class == mod.BaseConfiguration
+
+    @patch.dict('os.environ', clear=True)
+    @patch.object(config, 'running_tests', new=False)
+    @patch('importlib.machinery')
+    def test_config_profile(self, machinery):
+        profile_name = 'abc123'
+        conf = config.Config(profile=profile_name)
+
+        machinery.SourceFileLoader.assert_called_once_with(
+            'mts_conf',
+            f'/etc/mts/config.{profile_name}.py')
+
+        loader = machinery.SourceFileLoader.return_value
+        mod = loader.load_module.return_value
+        assert conf.conf_class == mod.BaseConfiguration
+
+    @patch.dict('os.environ', values={'MTS_CONFIG_FILE': test_config})
+    def test_overriding(self):
+        new_value = 'dddeeefff123'
+        test_val2 = 3
+        test_val3 = 10
+        conf = config.Config()
+        import tests.data.config as conf_data
+        assert conf.test_val1 == conf_data.TestConfiguration.test_val1
+        assert conf['test_val1'] == conf_data.TestConfiguration.test_val1
+        conf['test_val1'] = new_value
+        assert conf.test_val1 == new_value
+        assert conf['test_val1'] == new_value
+        conf.update({'test_val2': test_val2})
+        conf.update(test_val3=test_val3)
+        assert conf.test_val2 == test_val2
+        assert conf.test_val3 == test_val3
+        conf.reset()
+        assert conf.test_val1 == conf_data.TestConfiguration.test_val1
