@@ -94,6 +94,25 @@ class Config:
         else:
             return 'BaseConfiguration'
 
+    def update(self, new_val_dict=None, **kwargs):
+        """
+        Support update configuration with the dictionary or keyword arguments
+        :param new_val_dict: dictionary containing new configuration values
+        :type new_val_dict: dict
+        :param kwargs: keyword-styled new configuration values
+        :return:
+        """
+        if new_val_dict and isinstance(new_val_dict, dict):
+            self.__overrides.update(new_val_dict)
+        self.__overrides.update(kwargs)
+
+    def reset(self):
+        """
+        Reset overrides
+        :return:
+        """
+        self.__overrides.clear()
+
     def load_new_config(self, profile=None, config_file=None, config_class=None,
                         keep_overrides=False):
         """
