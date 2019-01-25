@@ -37,4 +37,8 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
+    data_files=[
+        ('/etc/fedmsg.d/', ['fedmsg.d/mts.py']),
+        ('/etc/mts/', ['conf/config.py']),
+    ],
 )
