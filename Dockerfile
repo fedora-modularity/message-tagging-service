@@ -26,5 +26,5 @@ RUN rm -rf ./fedmsg.d && rm -rf /etc/fedmsg.d
 RUN sed -i '/koji/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
-#USER 1001
+USER 1001
 CMD ["fedmsg-hub-3"]
