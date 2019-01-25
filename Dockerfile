@@ -3,6 +3,10 @@ FROM registry.fedoraproject.org/fedora:29
 LABEL maintainer="Factory 2 Team" \
       description="A microservice triggered by specific message to tag a build."
 
+# This is an argument for a URL to a DNF repo file of a repo that contains python3-rhmsg
+ARG rcm_tools_repo_file
+ADD $rcm_tools_repo_file /etc/yum.repos.d/rcm-tools-fedora.repo
+
 RUN dnf install -y \
         --setopt=deltarpm=0 \
         --setopt=install_weak_deps=false \
@@ -12,6 +16,7 @@ RUN dnf install -y \
         python3-koji \
         python3-requests \
         python3-qpid-proton \
+        python3-rhmsg \
         krb5-workstation \
     && dnf clean all
 
