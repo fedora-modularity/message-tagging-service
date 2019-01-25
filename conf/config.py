@@ -32,7 +32,7 @@ class BaseConfiguration:
     # Consumer.client-mts.queue.VirtualTopic.eng.mbs.module.state.change
     consumer_topics = [
         'org.fedoraproject.prod.mbs.module.state.change',
-    ],
+    ]
 
     # Indicate which messaging backend will be used to send message.
     # Choices: fedmsg and rhmsg. For internal, set it to rhmsg.
