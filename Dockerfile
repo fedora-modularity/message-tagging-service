@@ -17,6 +17,9 @@ RUN sed -i '/default_ccache_name = KEYRING:persistent:%{uid}/d' /etc/krb5.conf
 WORKDIR /src
 
 COPY . .
+# Delete the default fedmsg configuration files, and rely on the user supplying
+# the correct configuration as a mounted volume in /etc/fedmsg.d
+RUN rm -rf ./fedmsg.d && rm -rf /etc/fedmsg.d
 RUN sed -i '/koji/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
@@ -24,6 +27,5 @@ RUN python3 -m pip install --no-deps .
 VOLUME /etc/mts
 # Mount to a directory holding keytab and probably message bus certs.
 VOLUME /etc/secrets
-VOLUME /etc/fedmsg.d
 #USER 1001
 CMD ["fedmsg-hub-3"]
