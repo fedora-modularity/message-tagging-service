@@ -4,7 +4,7 @@ try { // massive try{} catch{} around the entire build for failure notifications
             checkout scm
             stage('Build the message-tagging-service container image') {
                 docker.withRegistry('https://quay.io/', 'quay-io-factory2-builder-sa-credentials') {
-                    // rcm_tools_repo_url and ca_url parameters must be set
+                    // The rcm_tools_repo_url parameter must be set
                     def image = docker.build "factory2/message-tagging-service:latest", "--build-arg rcm_tools_repo_file=${rcm_tools_repo_url} ."
                     image.push()
                 }
