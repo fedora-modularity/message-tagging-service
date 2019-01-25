@@ -35,5 +35,9 @@ RUN rm -rf ./fedmsg.d && rm -rf /etc/fedmsg.d
 RUN sed -i '/koji/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
+# Mount to a directory holding the MTS config file
+VOLUME /etc/mts
+# Mount to a directory holding the fedmsg config file(s)
+VOLUME /etc/fedmsg.d
 USER 1001
 CMD ["/usr/bin/bash", "-c", "docker/install-ca.sh && exec fedmsg-hub-3"]
