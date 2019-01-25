@@ -23,9 +23,5 @@ RUN rm -rf ./fedmsg.d && rm -rf /etc/fedmsg.d
 RUN sed -i '/koji/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
-# Mount to a directory holding config file.
-VOLUME /etc/mts
-# Mount to a directory holding keytab and probably message bus certs.
-VOLUME /etc/secrets
 #USER 1001
 CMD ["fedmsg-hub-3"]
