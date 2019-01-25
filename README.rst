@@ -32,7 +32,7 @@ Rule Definition
 
 Rule definition is documented in a `Modularity document`_
 
-For detailed information of how the rules are matched, please refer to
+For detailed information on how the rules are matched, please refer to
 `paragraph`_ in that document.
 
 .. _Modularity document: https://pagure.io/modularity/blob/master/f/drafts/module-tagging-service/format.md
@@ -54,7 +54,7 @@ There are two type of configurations.
 
 * Koji login authentication method. It defaults to Kerberos, which is set in
   default ``koji`` profile. It could be changed to other ``authtype``, for
-  example ``ssl``. Please note that, ``cert`` has to be set as well for
+  example ``ssl``. Please note that ``cert`` has to be set as well for
   ``ssl``.
 
 Messaging
