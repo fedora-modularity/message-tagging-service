@@ -6,6 +6,8 @@ LABEL maintainer="Factory 2 Team" \
 # This is an argument for a URL to a DNF repo file of a repo that contains python3-rhmsg
 ARG rcm_tools_repo_file
 ADD $rcm_tools_repo_file /etc/yum.repos.d/rcm-tools-fedora.repo
+# Since we don't trust any internal CAs at this point, we must connect over http
+RUN sed -i 's/https:/http:/g' /etc/yum.repos.d/rcm-tools-fedora.repo
 
 RUN dnf install -y \
         --setopt=deltarpm=0 \
