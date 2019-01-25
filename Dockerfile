@@ -4,6 +4,9 @@ LABEL maintainer="Factory 2 Team" \
       description="A microservice triggered by specific message to tag a build."
 
 RUN dnf install -y \
+        --setopt=deltarpm=0 \
+        --setopt=install_weak_deps=false \
+        --setopt=tsflags=nodocs \
         python3-pyyaml \
         python3-fedmsg \
         python3-koji \
