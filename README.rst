@@ -43,14 +43,17 @@ Configuration
 
 There are two type of configurations.
 
-* ``fedmsg.d/``: including config files for fedmsg hub. ``config.py``
-  configures fedmsg hub for service itself. ``mts.py`` enables defined consumer
-  and configures to connect UMB accordingly.
+* ``fedmsg.d/mts.py``: including MTS-specific configs for fedmsg hub. ``mts.py``
+  enables defined consumer and configures to connect UMB accordingly. Refer to
+  section ``Environment Variables`` to learn how to enable stomp protocol to
+  connect other message bus other than the fedmsg.
 
-* ``mts_config.py``: including configs for service. There are two sections,
-  ``BaseConfiguration`` provides default options which could be reused for
-  running in production. ``DevConfiguration`` contains anything for running in
-  development mode.
+* ``conf/config.py``: including configs for service.
+
+  * ``BaseConfiguration`` provides default options which could be reused for
+    running in production.
+  * ``DevConfiguration`` contains anything for running in development mode.
+  * ``TestConfiguration`` contains any config for test purpose.
 
 * Koji login authentication method. It defaults to Kerberos, which is set in
   default ``koji`` profile. It could be changed to other ``authtype``, for
