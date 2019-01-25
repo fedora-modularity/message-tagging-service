@@ -19,6 +19,8 @@ RUN sed -i '/default_ccache_name = KEYRING:persistent:%{uid}/d' /etc/krb5.conf
 
 WORKDIR /src
 
+# This will allow a non-root user to install a custom root CA at run-time
+RUN chmod 777 /etc/pki/tls/certs/ca-bundle.crt
 COPY . .
 # Delete the default fedmsg configuration files, and rely on the user supplying
 # the correct configuration as a mounted volume in /etc/fedmsg.d
@@ -27,4 +29,4 @@ RUN sed -i '/koji/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
 USER 1001
-CMD ["fedmsg-hub-3"]
+CMD ["/usr/bin/bash", "-c", "docker/install-ca.sh && exec fedmsg-hub-3"]
