@@ -40,7 +40,7 @@ class Config:
     Setting a new value to instance['name'] will override the value of property
         (but only for this particular instance)
     """
-    __defaults = {}
+    _defaults = {}
 
     def __init__(self, profile=None, config_file=None, config_class=None):
         """
@@ -52,7 +52,8 @@ class Config:
         :param config_class: force class name in configuration file
         :type config_class: str
         """
-        self.__overrides = {}
+        self._conf_class = None  # set lazily later
+        self._overrides = {}
         self.load_new_config(profile, config_file, config_class)
 
     @staticmethod
@@ -103,15 +104,15 @@ class Config:
         :return:
         """
         if new_val_dict and isinstance(new_val_dict, dict):
-            self.__overrides.update(new_val_dict)
-        self.__overrides.update(kwargs)
+            self._overrides.update(new_val_dict)
+        self._overrides.update(kwargs)
 
     def reset(self):
         """
         Reset overrides
         :return:
         """
-        self.__overrides.clear()
+        self._overrides.clear()
 
     def load_new_config(self, profile=None, config_file=None, config_class=None,
                         keep_overrides=False):
@@ -134,12 +135,12 @@ class Config:
         if not config_class:
             config_class = self.get_config_class_name()
         if getattr(mod, config_class, None) is not None:
-            self.__conf_class = getattr(mod, config_class)
+            self._conf_class = getattr(mod, config_class)
         else:
             raise AttributeError(f'Configuration class {config_class} '
                                  f'not found in configuration file {config_file}')
         if not keep_overrides:
-            self.__overrides.clear()
+            self._overrides.clear()
 
     def __getattr__(self, item):
         """
@@ -148,10 +149,7 @@ class Config:
         :type item: str
         :return: item value
         """
-        try:
-            return self[item]
-        except KeyError as exc:
-            raise AttributeError(f'Parameter {item} not found in configuration.') from exc
+        return self[item]
 
     def __getitem__(self, item):
         """
@@ -160,15 +158,20 @@ class Config:
         :return: item value
         """
         # check overrides first:
-        if self.__overrides.get(item) is not None:
-            return self.__overrides[item]
+        if item in self._overrides:
+            return self._overrides[item]
+
         # trying configuration class then
-        if getattr(self.__conf_class, item) is not None:
-            return getattr(self.__conf_class, item)
+        try:
+            return getattr(self._conf_class, item)
+        except AttributeError:
+            pass
+
         # fallback to defaults if any
-        if self.__defaults.get(item) is not None:
-            return self.__defaults[item]
-        raise KeyError(f'Parameter {item} not found in configuration.')
+        if item in self._defaults:
+            return self._defaults[item]
+
+        raise KeyError(f'{self._conf_class.__name__} has no config {item}.')
 
     def __setitem__(self, key, value):
         """
@@ -178,8 +181,8 @@ class Config:
         :param value: new value
         :return: None
         """
-        self.__overrides[key] = value
+        self._overrides[key] = value
 
     @property
     def conf_class(self):
-        return self.__conf_class
+        return self._conf_class
