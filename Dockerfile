@@ -13,6 +13,8 @@ RUN dnf install -y \
         --setopt=deltarpm=0 \
         --setopt=install_weak_deps=false \
         --setopt=tsflags=nodocs \
+        brewkoji \
+        brewkoji-stage \
         python3-pyyaml \
         python3-fedmsg \
         python3-koji \
