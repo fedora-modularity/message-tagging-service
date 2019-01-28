@@ -213,7 +213,6 @@ data:
             nvr = 'javapackages-tools-1-1.c1'
             session.tagBuild.assert_has_calls([
                 call('f29-modular-ursamajor', nvr),
-                call('modular-fallback-tag', nvr),
             ], any_order=True)
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
@@ -224,8 +223,8 @@ data:
             self, read_config, ClientSession, publish, retrieve_modulemd_content):
         read_config.return_value = koji_config_krb_auth
 
-        # Note that, {development: true} is added. That will causes this module
-        # matches a second rule as well.
+        # Note that, {development: true} is added. Although that makes this module
+        # match multiple rules, only the first one should be checked and applied.
         retrieve_modulemd_content.return_value = '''\
 ---
 document: modulemd
@@ -263,7 +262,6 @@ data:
             nvr = 'javapackages-tools-1-1.c1'
             session.tagBuild.assert_has_calls([
                 call('modular-development-builds', nvr),
-                call('modular-fallback-tag', nvr),
             ], any_order=True)
 
             publish.assert_called_once_with('build.tagged', {
@@ -277,7 +275,6 @@ data:
                 'nvr': nvr,
                 'destination_tags': [
                     'modular-development-builds',
-                    'modular-fallback-tag',
                 ]
             })
 

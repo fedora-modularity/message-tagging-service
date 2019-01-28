@@ -367,7 +367,8 @@ def handle(rule_defs, event_msg):
         match = rd.match(modulemd)
         if match:
             rule_matches.append(match)
-            logger.info('[%d] Rule definition: Matched.', i)
+            logger.info('[%d] Rule definition: Matched. Remaining rules ignored.', i)
+            break
         else:
             logger.info('[%d] Rule definition: Not Matched.', i)
 
