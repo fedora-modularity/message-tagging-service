@@ -6,6 +6,7 @@ import pytest
 from mock import Mock
 from mock import call
 from mock import patch
+from textwrap import dedent
 
 from message_tagging_service import tagging_service
 from message_tagging_service.utils import read_rule_defs
@@ -133,21 +134,21 @@ class TestMatchRuleDefinitions(object):
     def test_not_tag_build_if_no_rules_are_matched(
             self, tag_build, retrieve_modulemd_content):
         # Note that, platform does not match the rule in rule file.
-        retrieve_modulemd_content.return_value = '''\
----
-document: modulemd
-version: 2
-data:
-  name: ant
-  stream: 1
-  version: 1
-  context: c1
-  dependencies:
-  - buildrequires:
-      platform: [el8]
-    requires:
-      platform: [el8]
-'''
+        retrieve_modulemd_content.return_value = dedent('''\
+            ---
+            document: modulemd
+            version: 2
+            data:
+              name: ant
+              stream: 1
+              version: 1
+              context: c1
+              dependencies:
+              - buildrequires:
+                  platform: [el8]
+                requires:
+                  platform: [el8]
+            ''')
 
         rule_file = os.path.join(test_data_dir, 'mts-test-for-no-match.yaml')
         with patch('requests.get') as get:
@@ -178,21 +179,21 @@ data:
         read_config.return_value = koji_config_krb_auth
 
         # Note that, platform does not match the rule in rule file.
-        retrieve_modulemd_content.return_value = '''\
----
-document: modulemd
-version: 2
-data:
-  name: javapackages-tools
-  stream: 1
-  version: 1
-  context: c1
-  dependencies:
-  - buildrequires:
-      platform: [f29]
-    requires:
-      platform: [f29]
-'''
+        retrieve_modulemd_content.return_value = dedent('''\
+            ---
+            document: modulemd
+            version: 2
+            data:
+              name: javapackages-tools
+              stream: 1
+              version: 1
+              context: c1
+              dependencies:
+              - buildrequires:
+                  platform: [f29]
+                requires:
+                  platform: [f29]
+            ''')
 
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
         with patch('requests.get') as get:
@@ -225,22 +226,22 @@ data:
 
         # Note that, {development: true} is added. Although that makes this module
         # match multiple rules, only the first one should be checked and applied.
-        retrieve_modulemd_content.return_value = '''\
----
-document: modulemd
-version: 2
-data:
-  name: javapackages-tools
-  stream: 1
-  version: 1
-  context: c1
-  development: true
-  dependencies:
-  - buildrequires:
-      platform: [f29]
-    requires:
-      platform: [f29]
-'''
+        retrieve_modulemd_content.return_value = dedent('''\
+            ---
+            document: modulemd
+            version: 2
+            data:
+              name: javapackages-tools
+              stream: 1
+              version: 1
+              context: c1
+              development: true
+              dependencies:
+              - buildrequires:
+                  platform: [f29]
+                requires:
+                  platform: [f29]
+            ''')
 
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
         with patch('requests.get') as get:
