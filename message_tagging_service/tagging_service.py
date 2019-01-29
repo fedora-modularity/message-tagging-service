@@ -360,27 +360,27 @@ def handle(rule_defs, event_msg):
 
     logger.debug('Modulemd file is downloaded and parsed.')
 
-    rule_matches = []
+    rule_match = None
     for i, rule_def in enumerate(rule_defs, 1):
         rd = RuleDef(rule_def)
         logger.info('[%s] Checking rule definition: %s', i, rd.id)
         match = rd.match(modulemd)
         if match:
-            rule_matches.append(match)
             logger.info('[%d] Rule definition: Matched. Remaining rules ignored.', i)
+            rule_match = match
             break
         else:
             logger.info('[%d] Rule definition: Not Matched.', i)
 
-    if not rule_matches:
+    if not rule_match:
         logger.info('Module build %s does not match any rule.', nsvc)
         return
 
     stream = this_stream.replace('-', '_')
     nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
-    dest_tags = [item.dest_tag for item in rule_matches]
-    logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
 
+    dest_tags = [rule_match.dest_tag]
+    logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
     tagged_tags = tag_build(nvr, dest_tags)
 
     if not tagged_tags:
