@@ -46,13 +46,13 @@ class RuleMatch(object):
         if not match: ...
 
     :param bool matched: indicate if rule definition is matched.
-    :param str dest_tag: the formatted destination tag from rule definition
+    :param str dest_tags: the formatted destination tags from rule definition
         item ``destination``.
     """
 
-    def __init__(self, matched, dest_tag=None):
+    def __init__(self, matched, dest_tags=None):
         self.matched = matched
-        self.dest_tag = dest_tag
+        self.dest_tags = dest_tags
 
     def __bool__(self):
         return self.matched
@@ -121,13 +121,16 @@ class RuleDef(object):
             check_values = mmd_property_value
         else:
             check_values = [mmd_property_value]
+
+        matches_found = False
         for value in check_values:
             match = re.search(regex, value)
             if match:
+                matches_found = True
                 if match.groupdict():
                     self._regex_has_named_group.append((regex, value))
-                return True
-        return False
+
+        return matches_found
 
     def find_diff_list(self, match_candidates, mmd_property_value):
         """Find out if module property value matches one of values defined in rule
@@ -203,7 +206,7 @@ class RuleDef(object):
             logger.debug(
                 'No rule criteria is defined. Build will be tagged to %s',
                 self.destinations)
-            return RuleMatch(True, self.destinations)
+            return RuleMatch(True, [self.destinations])
 
         for property, expected in self.rule.items():
             # Both scratch and development have default value to compare with
@@ -268,9 +271,9 @@ class RuleDef(object):
                     re.sub(regex, self.destinations, mmd_property_value)
                     for regex, mmd_property_value in self._regex_has_named_group
                 ]
-                return RuleMatch(True, formatted_dest_tags[-1])
+                return RuleMatch(True, formatted_dest_tags)
             else:
-                return RuleMatch(True, self.destinations)
+                return RuleMatch(True, [self.destinations])
         else:
             return RuleMatch(False)
 
@@ -379,7 +382,7 @@ def handle(rule_defs, event_msg):
     stream = this_stream.replace('-', '_')
     nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
 
-    dest_tags = [rule_match.dest_tag]
+    dest_tags = rule_match.dest_tags
     logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
     tagged_tags = tag_build(nvr, dest_tags)
 
