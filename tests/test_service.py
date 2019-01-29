@@ -38,7 +38,7 @@ class TestRuleDefinitionCheck(object):
         }
         match = tagging_service.RuleDef(rule_def).match(Mock())
         assert match
-        assert 'modular-fallback-tag' == match.dest_tag
+        assert ['modular-fallback-tag'] == match.dest_tags
 
     def test_match_scratch_module_build(self):
         rule_def = {
@@ -52,7 +52,7 @@ class TestRuleDefinitionCheck(object):
         modulemd = {'data': {'scratch': True}}
         match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
-        assert 'modular-fallback-tag' == match.dest_tag
+        assert ['modular-fallback-tag'] == match.dest_tags
 
         modulemd = {'data': {'scratch': False}}
         assert not tagging_service.RuleDef(rule_def).match(modulemd)
@@ -72,7 +72,7 @@ class TestRuleDefinitionCheck(object):
         modulemd = {'data': {'development': True}}
         match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
-        assert 'modular-fallback-tag' == match.dest_tag
+        assert ['modular-fallback-tag'] == match.dest_tags
 
         modulemd = {'data': {'development': False}}
         assert not tagging_service.RuleDef(rule_def).match(modulemd)
@@ -94,7 +94,7 @@ class TestRuleDefinitionCheck(object):
         modulemd = {'data': {'name': 'javapackages-tools'}}
         match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
-        assert r'\g<platform>-modular-ursamajor' == match.dest_tag
+        assert [r'\g<platform>-modular-ursamajor'] == match.dest_tags
 
         modulemd = {'data': {'name': 'module-a-ursamajor'}}
         assert tagging_service.RuleDef(rule_def).match(modulemd)
@@ -124,7 +124,7 @@ class TestRuleDefinitionCheck(object):
         }}
         match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
-        assert 'f28-modular-ursamajor' == match.dest_tag
+        assert ['f28-modular-ursamajor'] == match.dest_tags
 
 
 class TestMatchRuleDefinitions(object):
@@ -278,6 +278,54 @@ class TestMatchRuleDefinitions(object):
                     'modular-development-builds',
                 ]
             })
+
+    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('koji.ClientSession')
+    @patch('koji.read_config')
+    def test_tag_build_with_multiple_tags(
+            self, read_config, ClientSession, retrieve_modulemd_content):
+        read_config.return_value = koji_config_krb_auth
+
+        # Because rule file specifies that destination tag uses the value of
+        # requires.platform, and there are two of those values in moduelmd,
+        # the module build should be tagged with two tags.
+        retrieve_modulemd_content.return_value = dedent('''\
+            ---
+            document: modulemd
+            version: 2
+            data:
+              name: javapackages-tools
+              stream: 1
+              version: 1
+              context: c1
+              dependencies:
+              - buildrequires:
+                  platform: [f29]
+                requires:
+                  platform: [f29, f28]
+            ''')
+
+        rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
+        with patch('requests.get') as get:
+            with open(rule_file, 'r') as f:
+                get.return_value.text = f.read()
+            rule_defs = read_rule_defs()
+
+            tagging_service.handle(rule_defs, {
+                'id': 1,
+                'name': 'javapackages-tools',
+                'stream': '1',
+                'version': '1',
+                'context': 'c1',
+                'state_name': 'ready',
+            })
+
+            session = ClientSession.return_value
+            nvr = 'javapackages-tools-1-1.c1'
+            session.tagBuild.assert_has_calls([
+                call('f29-modular-ursamajor', nvr),
+                call('f28-modular-ursamajor', nvr),
+            ], any_order=True)
 
 
 class TestLoginKoji(object):
