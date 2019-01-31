@@ -16,7 +16,8 @@ config = {
     },
     'relay_inbound': ["tcp://127.0.0.1:2003"],
 
-    'mts-consumer': True,
+    'module-build-state-change-consumer': True,
+    'build-tagged-consumer': True,
 }
 
 if 'MTS_USE_STOMP' in os.environ:

@@ -26,16 +26,14 @@ import requests
 from message_tagging_service import conf
 from message_tagging_service import tagging_service
 from message_tagging_service.utils import read_rule_defs
+from message_tagging_service import messaging
 
 logger = logging.getLogger(__name__)
 
 
-class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
-    topic = conf.consumer_topics
-    config_key = 'mts-consumer'
-
-    def __init__(self, *args, **kwargs):
-        super(MTSConsumer, self).__init__(*args, **kwargs)
+class ModuleBuildStateChangeConsumer(fedmsg.consumers.FedmsgConsumer):
+    topic = conf.consumer_topics['module-build-state-change-consumer']
+    config_key = 'module-build-state-change-consumer'
 
     def consume(self, msg):
         logger.debug('Got message: %r', msg)
@@ -55,3 +53,42 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
             # file is empty, catch this case and skip to handle the tag.
             if rule_defs is not None:
                 tagging_service.handle(rule_defs, event_msg)
+
+
+class BuildTagConsumer(fedmsg.consumers.FedmsgConsumer):
+    """Consumer messages on build is tagged
+
+    BuildTagConsumer handles two different format of messages for Fedora and
+    Brew. For Fedora, the message is a simple mapping containing tag name and
+    build info. Whereas, the message sent from Brew contains those information in
+    individual mapping. This consumer handles both of them to get build NVR and
+    tag name.
+    """
+
+    topic = conf.consumer_topics['build-tag-consumer']
+    config_key = 'build-tag-consumer'
+
+    def consume(self, msg):
+        logger.debug('Got message: %r', msg)
+
+        event_msg = msg['body']['msg']
+
+        user = event_msg['user']
+        if isinstance(user, dict):
+            # Handle Brew format.
+            user = user['name']
+            nvr = event_msg['build']['nvr']
+            tag = event_msg['tag']['name']
+        else:
+            # The Fedora case.
+            nvr = '{name}-{version}-{release}'.format(**event_msg)
+            tag = event_msg['tag']
+
+        if user != conf.koji_mts_username:
+            logger.debug('Build %s is not tagged by MTS. Skip to notify.', nvr)
+            return
+
+        messaging.publish('build.tagged', {
+            'nvr': nvr,
+            'tag': tag,
+        })

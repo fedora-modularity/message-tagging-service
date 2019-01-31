@@ -30,9 +30,14 @@ class BaseConfiguration:
     # Messages sent to these topics will be handled.
     # For internal, it is set to a UMB queue name, for example,
     # Consumer.client-mts.queue.VirtualTopic.eng.mbs.module.state.change
-    consumer_topics = [
-        'org.fedoraproject.prod.mbs.module.state.change',
-    ]
+    consumer_topics = {
+        'module-build-state-change-consumer': [
+            'org.fedoraproject.prod.mbs.module.state.change',
+        ],
+        'build-tagged-consumer': [
+            'org.fedoraproject.prod.buildsys.tag',
+        ]
+    }
 
     # Indicate which messaging backend will be used to send message.
     # Choices: fedmsg and rhmsg. For internal, set it to rhmsg.
@@ -65,13 +70,21 @@ class BaseConfiguration:
     # Example: https://example.com/rules/mts-rules.yaml
     rules_file_url = ''
 
+    koji_mts_username = ''
+
 
 class DevConfiguration(BaseConfiguration):
     koji_profile = 'stg'
-    consumer_topics = [
-        'org.fedoraproject.dev.mbs.module.state.change',
-        'org.fedoraproject.stg.mbs.module.state.change',
-    ]
+    consumer_topics = {
+        'module-build-state-change-consumer': [
+            'org.fedoraproject.dev.mbs.module.state.change',
+            'org.fedoraproject.stg.mbs.module.state.change',
+        ],
+        'build-tag-consumer': [
+            'org.fedoraproject.dev.buildsys.tag',
+            'org.fedoraproject.stg.buildsys.tag',
+        ]
+    }
     log_level = 'DEBUG'
     rules_file_url = (
         'https://raw.githubusercontent.com/fedora-modularity/message-tagging-service/'

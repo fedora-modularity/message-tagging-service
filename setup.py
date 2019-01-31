@@ -28,8 +28,9 @@ setup(
     packages=find_packages(),
     install_requires=install_requires,
     entry_points='''
-        [moksha.consumer]
-        mts-consumer = message_tagging_service.consumer:MTSConsumer
+    [moksha.consumer]
+    module-build-state-change-consumer = message_tagging_service.consumer:ModuleBuildStateChangeConsumer
+    build-tag-consumer = message_tagging_service.consumer:BuildTagConsumer
     ''',
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',

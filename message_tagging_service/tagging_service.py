@@ -28,7 +28,6 @@ import re
 import requests
 import yaml
 
-from message_tagging_service import messaging
 from message_tagging_service import conf
 from message_tagging_service.utils import retrieve_modulemd_content
 
@@ -336,7 +335,9 @@ def tag_build(nvr, dest_tags):
             if conf.dry_run:
                 logger.info("DRY-RUN: koji_session.tagBuild('%s', '%s')", tag, nvr)
             else:
-                koji_session.tagBuild(tag, nvr)
+                task_id = koji_session.tagBuild(tag, nvr)
+                logger.debug('Created task to tag build: %s',
+                             f'{koji_config["weburl"]}/taskinfo?taskID={task_id}')
         except Exception:
             logger.exception('Failed to tag %s to build %s', tag, nvr)
         else:
@@ -392,14 +393,7 @@ def handle(rule_defs, event_msg):
             dest_tags, nvr)
         return
 
-    messaging.publish('build.tagged', {
-        'build': {
-            'id': event_msg['id'],
-            'name': this_name,
-            'stream': this_stream,
-            'version': this_version,
-            'context': this_context,
-        },
-        'nvr': nvr,
-        'destination_tags': tagged_tags,
-    })
+    logger.info('Created task(s) to apply tags %r to build %s.', tagged_tags, nvr)
+
+    # Waiting for Koji/Brew to finish tagging the build, then send message to
+    # message bus.

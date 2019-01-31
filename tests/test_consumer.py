@@ -27,14 +27,14 @@ from mock import patch
 from message_tagging_service import consumer
 
 
-class TestConsumer(object):
+class TestModuleBuildStateChangeConsumer(object):
 
     def new_consumer(self):
         hub = MagicMock()
         hub.config = {}
-        hub.config['mts-consumer'] = True
+        hub.config['module-build-state-change-consumer'] = True
         hub.config['validate_signatures'] = False
-        c = consumer.MTSConsumer(hub)
+        c = consumer.ModuleBuildStateChangeConsumer(hub)
         c.incoming = queue.Queue()
         return c
 
@@ -71,3 +71,57 @@ class TestConsumer(object):
         }}})
 
         handle.assert_not_called()
+
+
+class TestBuildTaggedConsumer(object):
+
+    def new_consumer(self):
+        hub = MagicMock()
+        hub.config = {}
+        hub.config['build-tagged-consumer'] = True
+        hub.config['validate_signatures'] = False
+        c = consumer.BuildTagConsumer(hub)
+        c.incoming = queue.Queue()
+        return c
+
+    @patch.object(consumer.tagging_service.conf, 'koji_mts_username', new='mts')
+    @patch('message_tagging_service.messaging.publish')
+    def test_handle_fedora_message(self, publish):
+        consumer = self.new_consumer()
+        consumer.consume({'body': {'msg': {
+            'build_id': 1,
+            'name': 'pkg',
+            'tag_id': 100,
+            'instance': 'primary',
+            'tag': 'f29-updates-candidate',
+            'user': 'mts',
+            'version': '1.2.0',
+            'owner': 'mts',
+            'release': '1.fc29'
+        }}})
+
+        publish.assert_called_once_with('build.tagged', {
+            'nvr': 'pkg-1.2.0-1.fc29',
+            'tag': 'f29-updates-candidate',
+        })
+
+    @patch.object(consumer.tagging_service.conf, 'koji_mts_username', new='mts')
+    @patch('message_tagging_service.messaging.publish')
+    def test_handle_umb_message(self, publish):
+        consumer = self.new_consumer()
+        consumer.consume({'body': {'msg': {
+            'tag': {
+                'name': 'guest-rhel-8.0.0-candidate',
+            },
+            'build': {
+                'nvr': 'rhel-guest-image-8.0-1776',
+            },
+            'user': {
+                'name': 'mts'
+            }
+        }}})
+
+        publish.assert_called_once_with('build.tagged', {
+            'nvr': 'rhel-guest-image-8.0-1776',
+            'tag': 'guest-rhel-8.0.0-candidate',
+        })

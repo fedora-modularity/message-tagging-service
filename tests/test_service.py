@@ -217,11 +217,10 @@ class TestMatchRuleDefinitions(object):
             ], any_order=True)
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
-    @patch('message_tagging_service.messaging.publish')
     @patch('koji.ClientSession')
     @patch('koji.read_config')
     def test_tag_build_if_multiple_rules_are_matched(
-            self, read_config, ClientSession, publish, retrieve_modulemd_content):
+            self, read_config, ClientSession, retrieve_modulemd_content):
         read_config.return_value = koji_config_krb_auth
 
         # Note that, {development: true} is added. Although that makes this module
@@ -264,20 +263,6 @@ class TestMatchRuleDefinitions(object):
             session.tagBuild.assert_has_calls([
                 call('modular-development-builds', nvr),
             ], any_order=True)
-
-            publish.assert_called_once_with('build.tagged', {
-                'build': {
-                    'id': 1,
-                    'name': 'javapackages-tools',
-                    'stream': '1',
-                    'version': '1',
-                    'context': 'c1',
-                },
-                'nvr': nvr,
-                'destination_tags': [
-                    'modular-development-builds',
-                ]
-            })
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
     @patch('koji.ClientSession')
