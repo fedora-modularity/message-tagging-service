@@ -28,6 +28,8 @@ import re
 import requests
 import yaml
 
+from contextlib import contextmanager
+
 from message_tagging_service import messaging
 from message_tagging_service import conf
 from message_tagging_service.utils import retrieve_modulemd_content
@@ -314,7 +316,19 @@ def login_koji(session, config):
     return koji_cli.lib.activate_session(session, cfg)
 
 
-def tag_build(nvr, dest_tags):
+@contextmanager
+def make_koji_session():
+    koji_config = koji.read_config(conf.koji_profile)
+    session_opts = koji.grab_session_options(koji_config)
+    koji_session = koji.ClientSession(koji_config['server'], opts=session_opts)
+    login_koji(koji_session, koji_config)
+
+    yield koji_session
+
+    koji_session.logout()
+
+
+def tag_build(nvr, dest_tags, koji_session):
     """Tag build with specific tags
 
     Calling Koji API to tag build might fail, however successful tagged tag will
@@ -327,10 +341,6 @@ def tag_build(nvr, dest_tags):
     :rtype: list[str]
     """
     tagged_tags = []
-    koji_config = koji.read_config(conf.koji_profile)
-    session_opts = koji.grab_session_options(koji_config)
-    koji_session = koji.ClientSession(koji_config['server'], opts=session_opts)
-    login_koji(koji_session, koji_config)
     for tag in dest_tags:
         try:
             if conf.dry_run:
@@ -341,7 +351,6 @@ def tag_build(nvr, dest_tags):
             logger.exception('Failed to tag %s to build %s', tag, nvr)
         else:
             tagged_tags.append(tag)
-    koji_session.logout()
     return tagged_tags
 
 
@@ -380,26 +389,28 @@ def handle(rule_defs, event_msg):
         return
 
     stream = this_stream.replace('-', '_')
-    nvr = f'{this_name}-{stream}-{this_version}.{this_context}'
+    with make_koji_session() as koji_session:
+        for name in (this_name, f'{this_name}-devel'):
+            nvr = f'{name}-{stream}-{this_version}.{this_context}'
 
-    dest_tags = rule_match.dest_tags
-    logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
-    tagged_tags = tag_build(nvr, dest_tags)
+            dest_tags = rule_match.dest_tags
+            logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
+            tagged_tags = tag_build(nvr, dest_tags, koji_session)
 
-    if not tagged_tags:
-        logger.warning(
-            'None of tag(s) %r is tagged to build %s. Skip to send message.',
-            dest_tags, nvr)
-        return
+            if not tagged_tags:
+                logger.warning(
+                    'None of tag(s) %r is tagged to build %s. Skip to send message.',
+                    dest_tags, nvr)
+                continue
 
-    messaging.publish('build.tagged', {
-        'build': {
-            'id': event_msg['id'],
-            'name': this_name,
-            'stream': this_stream,
-            'version': this_version,
-            'context': this_context,
-        },
-        'nvr': nvr,
-        'destination_tags': tagged_tags,
-    })
+            messaging.publish('build.tagged', {
+                'build': {
+                    'id': event_msg['id'],
+                    'name': name,
+                    'stream': this_stream,
+                    'version': this_version,
+                    'context': this_context,
+                },
+                'nvr': nvr,
+                'destination_tags': tagged_tags,
+            })
