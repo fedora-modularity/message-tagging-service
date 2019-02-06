@@ -9,11 +9,14 @@ ADD $rcm_tools_repo_file /etc/yum.repos.d/rcm-tools-fedora.repo
 # Since we don't trust any internal CAs at this point, we must connect over http
 RUN sed -i 's/https:/http:/g' /etc/yum.repos.d/rcm-tools-fedora.repo
 
+# Pin moksha hub to a known good version until this is fixed:
+#   https://github.com/mokshaproject/moksha/issues/69
 RUN dnf install -y \
         --setopt=deltarpm=0 \
         --setopt=install_weak_deps=false \
         --setopt=tsflags=nodocs \
         python3-pyyaml \
+        python3-moksha-hub-1.5.13-1.fc29 \
         python3-fedmsg \
         python3-koji \
         python3-requests \
