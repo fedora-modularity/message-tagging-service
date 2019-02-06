@@ -212,8 +212,10 @@ class TestMatchRuleDefinitions(object):
 
             session = ClientSession.return_value
             nvr = 'javapackages-tools-1-1.c1'
+            nvr_devel = 'javapackages-tools-devel-1-1.c1'
             session.tagBuild.assert_has_calls([
                 call('f29-modular-ursamajor', nvr),
+                call('f29-modular-ursamajor', nvr_devel),
             ], any_order=True)
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
@@ -259,25 +261,26 @@ class TestMatchRuleDefinitions(object):
             })
 
             session = ClientSession.return_value
-            session.tagBuild.side_effect = [1, 2]  # Task ids
-            nvr = 'javapackages-tools-1-1.c1'
-            session.tagBuild.assert_has_calls([
-                call('modular-development-builds', nvr),
-            ], any_order=True)
+            for name in ('javapackages-tools', 'javapackages-tools-devel'):
+                nvr = f'{name}-1-1.c1'
 
-            publish.assert_called_once_with('build.tagged', {
-                'build': {
-                    'id': 1,
-                    'name': 'javapackages-tools',
-                    'stream': '1',
-                    'version': '1',
-                    'context': 'c1',
-                },
-                'nvr': nvr,
-                'destination_tags': [
-                    'modular-development-builds',
-                ]
-            })
+                session.tagBuild.assert_has_calls([
+                    call('modular-development-builds', nvr),
+                ], any_order=True)
+
+                publish.assert_any_call('build.tagged', {
+                    'build': {
+                        'id': 1,
+                        'name': name,
+                        'stream': '1',
+                        'version': '1',
+                        'context': 'c1',
+                    },
+                    'nvr': nvr,
+                    'destination_tags': [
+                        'modular-development-builds',
+                    ]
+                })
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
     @patch('koji.ClientSession')
@@ -322,9 +325,12 @@ class TestMatchRuleDefinitions(object):
 
             session = ClientSession.return_value
             nvr = 'javapackages-tools-1-1.c1'
+            nvr_devel = 'javapackages-tools-devel-1-1.c1'
             session.tagBuild.assert_has_calls([
                 call('f29-modular-ursamajor', nvr),
                 call('f28-modular-ursamajor', nvr),
+                call('f29-modular-ursamajor', nvr_devel),
+                call('f28-modular-ursamajor', nvr_devel),
             ], any_order=True)
 
 
