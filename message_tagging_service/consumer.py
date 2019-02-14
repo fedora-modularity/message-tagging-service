@@ -42,8 +42,9 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
 
         event_msg = msg['body']['msg']
         if event_msg['state_name'] != 'ready':
-            logger.info('Skip module build %s as it is not in ready state yet.',
-                        event_msg['koji_tag'])
+            logger.info('Skip module build %s-%s-%s-%s as it is not in ready state yet.',
+                        event_msg['name'], event_msg['stream'],
+                        event_msg['version'], event_msg['context'])
             return
 
         try:
