@@ -53,8 +53,12 @@ class TestConsumer(object):
     def test_ignore_message_if_not_ready(self, handle, read_rule_defs):
         consumer = self.new_consumer()
         consumer.consume({'body': {'msg': {
-            'state_name': 'done',
-            'koji_tag': 'module-modulea-1-1-c1',
+            'name': 'modulea',
+            'stream': '10',
+            'version': '201902141503',
+            'context': '00000000',
+            'state_name': 'init',
+            'koji_tag': None,
         }}})
 
         handle.assert_not_called()
