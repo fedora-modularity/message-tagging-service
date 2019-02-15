@@ -337,20 +337,22 @@ def tag_build(nvr, dest_tags, koji_session):
     :param str nvr: build NVR.
     :param dest_tags: tag names.
     :type dest_tags: list[str]
-    :return: tag names which are tagged to build successfully.
-    :rtype: list[str]
+    :return: pair of tag names, which are tagged to build successfully, and the
+        corresponding task id returned from Koji.
+    :rtype: list[(str, int)]
     """
     tagged_tags = []
     for tag in dest_tags:
         try:
             if conf.dry_run:
                 logger.info("DRY-RUN: koji_session.tagBuild('%s', '%s')", tag, nvr)
+                task_id = 1
             else:
-                koji_session.tagBuild(tag, nvr)
+                task_id = koji_session.tagBuild(tag, nvr)
         except Exception:
             logger.exception('Failed to tag %s to build %s', tag, nvr)
         else:
-            tagged_tags.append(tag)
+            tagged_tags.append((tag, task_id))
     return tagged_tags
 
 
@@ -386,6 +388,15 @@ def handle(rule_defs, event_msg):
 
     if not rule_match:
         logger.info('Module build %s does not match any rule.', nsvc)
+        messaging.publish('build.tag.unmatched', {
+            'build': {
+                'id': event_msg['id'],
+                'name': this_name,
+                'stream': this_stream,
+                'version': this_version,
+                'context': this_context,
+            },
+        })
         return
 
     stream = this_stream.replace('-', '_')
@@ -395,15 +406,15 @@ def handle(rule_defs, event_msg):
 
             dest_tags = rule_match.dest_tags
             logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
-            tagged_tags = tag_build(nvr, dest_tags, koji_session)
+            tag_tasks_info = tag_build(nvr, dest_tags, koji_session)
 
-            if not tagged_tags:
+            if not tag_tasks_info:
                 logger.warning(
                     'None of tag(s) %r is tagged to build %s. Skip to send message.',
-                    dest_tags, nvr)
+                    [tag_name for tag_name, _ in tag_tasks_info], nvr)
                 continue
 
-            messaging.publish('build.tagged', {
+            messaging.publish('build.tag.requested', {
                 'build': {
                     'id': event_msg['id'],
                     'name': name,
@@ -412,5 +423,8 @@ def handle(rule_defs, event_msg):
                     'context': this_context,
                 },
                 'nvr': nvr,
-                'destination_tags': tagged_tags,
+                'destination_tags': [
+                    {'tag': tag_name, 'task_id': task_id}
+                    for tag_name, task_id in tag_tasks_info
+                ],
             })

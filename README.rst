@@ -69,8 +69,13 @@ There are two type of configurations.
 Messaging
 ---------
 
-Once tags are applied to a build successfully, a message will be sent to topic
-``build.tagged`` on message bus. Message has this format::
+Events
+~~~~~~
+
+build.tag.requested
+^^^^^^^^^^^^^^^^^^^
+
+Message is sent when a ``tagBuild`` task is requested in Koji. An example message::
 
     {
       "build": {
@@ -81,13 +86,42 @@ Once tags are applied to a build successfully, a message will be sent to topic
         "context": context,
       },
       "nvr": N-V-R,
-      "destination_tags": [tag1, tag2, ...]
+      "destination_tags": [
+        {"tag": name_1, "task_id": 1},
+        {"tag": name_2, "task_id": 2},
+        ...
+      ]
     }
 
-Different message bus has different topic prefix to construct the full topic
-name. For Fedora, a full topic name could be
-``org.fedoraproject.prod.mts.build.tagged``. For internal UMB, it could be
-``VirtualTopic.eng.mts.build.tagged``.
+where, ``destination_tags`` is a list of mappings each of them contains the tag
+to apply and corresponding task ID returned from Koji.
+
+build.tag.unmatched
+^^^^^^^^^^^^^^^^^^^
+
+Message is sent if a module build does not match any predefined rules. An
+example message::
+
+    {
+      "build": {
+        "id": id,
+        "name": name,
+        "stream": stream,
+        "version": version,
+        "context": context,
+      },
+    }
+
+The message simply contains the module build information.
+
+Topic Prefix
+~~~~~~~~~~~~
+
+For Fedora, messages are sent to topics with prefix ``org.fedoraproject.prod``,
+e.g. ``org.fedoraproject.prod.mts.build.tag.requested``.
+
+For internal, the prefix is ``VirtualTopic.eng.mts``, e.g.
+``VirtualTopic.eng.mts.build.tag.requested``.
 
 Environment Variables
 ---------------------
