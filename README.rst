@@ -1,11 +1,17 @@
 Message Tagging Service
 =======================
 
-.. image:: https://img.shields.io/pypi/v/message-tagging-service.svg?label=PyPI
-.. image:: https://img.shields.io/pypi/pyversions/message-tagging-service.svg?label=Python
-.. image:: https://img.shields.io/pypi/l/message-tagging-service.svg?colorB=green&label=License
+.. image:: https://img.shields.io/pypi/v/message-tagging-service.svg
+   :target: https://pypi.org/project/message-tagging-service/
+
+.. image:: https://img.shields.io/pypi/pyversions/message-tagging-service.svg
+   :target: https://pypi.org/project/message-tagging-service/
+
+.. image:: https://img.shields.io/pypi/l/message-tagging-service.svg?colorB=green
+   :target: https://pypi.org/project/message-tagging-service/
+
 .. image:: https://travis-ci.org/fedora-modularity/message-tagging-service.svg?branch=master
-    :target: https://travis-ci.org/fedora-modularity/message-tagging-service
+   :target: https://travis-ci.org/fedora-modularity/message-tagging-service
 
 Message tagging service is a microservice to tag build with proper tags, which
 is triggered by specific message from a message bus. Currently, service
