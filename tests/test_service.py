@@ -172,10 +172,11 @@ class TestMatchRuleDefinitions(object):
             tag_build.assert_not_called()
 
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    @patch('message_tagging_service.messaging.publish')
     @patch('koji.ClientSession')
     @patch('koji.read_config')
     def test_tag_build_if_match_one_rule_only(
-            self, read_config, ClientSession, retrieve_modulemd_content):
+            self, read_config, ClientSession, publish, retrieve_modulemd_content):
         read_config.return_value = koji_config_krb_auth
 
         # Note that, platform does not match the rule in rule file.
@@ -201,6 +202,9 @@ class TestMatchRuleDefinitions(object):
                 get.return_value.text = f.read()
             rule_defs = read_rule_defs()
 
+            session = ClientSession.return_value
+            session.tagBuild.side_effect = [1, 2, 3]
+
             tagging_service.handle(rule_defs, {
                 'id': 1,
                 'name': 'javapackages-tools',
@@ -210,7 +214,6 @@ class TestMatchRuleDefinitions(object):
                 'state_name': 'ready',
             })
 
-            session = ClientSession.return_value
             nvr = 'javapackages-tools-1-1.c1'
             nvr_devel = 'javapackages-tools-devel-1-1.c1'
             session.tagBuild.assert_has_calls([
@@ -218,75 +221,38 @@ class TestMatchRuleDefinitions(object):
                 call('f29-modular-ursamajor', nvr_devel),
             ], any_order=True)
 
+            # 2 messages should be sent:
+            # javapackages-tools: f29
+            # javapackages-tools-devel: f29
+            publish.assert_has_calls([
+                call('build.tag.requested', {
+                    'build': {
+                        'id': 1, 'name': 'javapackages-tools',
+                        'stream': '1', 'version': '1', 'context': 'c1',
+                    },
+                    'nvr': nvr,
+                    'destination_tags': [
+                        {'tag': 'f29-modular-ursamajor', 'task_id': 1},
+                    ],
+                }),
+                call('build.tag.requested', {
+                    'build': {
+                        'id': 1, 'name': 'javapackages-tools-devel',
+                        'stream': '1', 'version': '1', 'context': 'c1',
+                    },
+                    'nvr': nvr_devel,
+                    'destination_tags': [
+                        {'tag': 'f29-modular-ursamajor', 'task_id': 2},
+                    ],
+                }),
+            ], any_order=True)
+
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
     @patch('message_tagging_service.messaging.publish')
     @patch('koji.ClientSession')
     @patch('koji.read_config')
-    def test_tag_build_if_multiple_rules_are_matched(
-            self, read_config, ClientSession, publish, retrieve_modulemd_content):
-        read_config.return_value = koji_config_krb_auth
-
-        # Note that, {development: true} is added. Although that makes this module
-        # match multiple rules, only the first one should be checked and applied.
-        retrieve_modulemd_content.return_value = dedent('''\
-            ---
-            document: modulemd
-            version: 2
-            data:
-              name: javapackages-tools
-              stream: 1
-              version: 1
-              context: c1
-              development: true
-              dependencies:
-              - buildrequires:
-                  platform: [f29]
-                requires:
-                  platform: [f29]
-            ''')
-
-        rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch('requests.get') as get:
-            with open(rule_file, 'r') as f:
-                get.return_value.text = f.read()
-            rule_defs = read_rule_defs()
-
-            tagging_service.handle(rule_defs, {
-                'id': 1,
-                'name': 'javapackages-tools',
-                'stream': '1',
-                'version': '1',
-                'context': 'c1',
-                'state_name': 'ready',
-            })
-
-            session = ClientSession.return_value
-            for name in ('javapackages-tools', 'javapackages-tools-devel'):
-                nvr = f'{name}-1-1.c1'
-
-                session.tagBuild.assert_has_calls([
-                    call('modular-development-builds', nvr),
-                ], any_order=True)
-
-                publish.assert_any_call('build.tagged', {
-                    'build': {
-                        'id': 1,
-                        'name': name,
-                        'stream': '1',
-                        'version': '1',
-                        'context': 'c1',
-                    },
-                    'nvr': nvr,
-                    'destination_tags': [
-                        'modular-development-builds',
-                    ]
-                })
-
-    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
-    @patch('koji.ClientSession')
-    @patch('koji.read_config')
     def test_tag_build_with_multiple_tags(
-            self, read_config, ClientSession, retrieve_modulemd_content):
+            self, read_config, ClientSession, publish, retrieve_modulemd_content):
         read_config.return_value = koji_config_krb_auth
 
         # Because rule file specifies that destination tag uses the value of
@@ -314,6 +280,9 @@ class TestMatchRuleDefinitions(object):
                 get.return_value.text = f.read()
             rule_defs = read_rule_defs()
 
+            session = ClientSession.return_value
+            session.tagBuild.side_effect = [1, 2, 3, 4, 5]
+
             tagging_service.handle(rule_defs, {
                 'id': 1,
                 'name': 'javapackages-tools',
@@ -323,7 +292,6 @@ class TestMatchRuleDefinitions(object):
                 'state_name': 'ready',
             })
 
-            session = ClientSession.return_value
             nvr = 'javapackages-tools-1-1.c1'
             nvr_devel = 'javapackages-tools-devel-1-1.c1'
             session.tagBuild.assert_has_calls([
@@ -331,6 +299,34 @@ class TestMatchRuleDefinitions(object):
                 call('f28-modular-ursamajor', nvr),
                 call('f29-modular-ursamajor', nvr_devel),
                 call('f28-modular-ursamajor', nvr_devel),
+            ], any_order=True)
+
+            # 2 messages should be sent:
+            # javapackages-tools: f29, f28
+            # javapackages-tools-devel: f29, f28
+            publish.assert_has_calls([
+                call('build.tag.requested', {
+                    'build': {
+                        'id': 1, 'name': 'javapackages-tools',
+                        'stream': '1', 'version': '1', 'context': 'c1',
+                    },
+                    'nvr': nvr,
+                    'destination_tags': [
+                        {'tag': 'f29-modular-ursamajor', 'task_id': 1},
+                        {'tag': 'f28-modular-ursamajor', 'task_id': 2},
+                    ],
+                }),
+                call('build.tag.requested', {
+                    'build': {
+                        'id': 1, 'name': 'javapackages-tools-devel',
+                        'stream': '1', 'version': '1', 'context': 'c1',
+                    },
+                    'nvr': nvr_devel,
+                    'destination_tags': [
+                        {'tag': 'f29-modular-ursamajor', 'task_id': 3},
+                        {'tag': 'f28-modular-ursamajor', 'task_id': 4},
+                    ],
+                }),
             ], any_order=True)
 
 
