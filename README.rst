@@ -176,6 +176,45 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.3 (2019-02-20)
+~~~~~~~~~~~~~~~~
+
+- Refine event topics (Chenxiong Qi)
+- Fix badges in README (Chenxiong Qi)
+- Better log when module build in init state (Chenxiong Qi)
+- Use known good version of moksha-hub (Luiz Carvalho)
+- Tag -devel CG Koji build (Luiz Carvalho)
+- Handle multiple tags for single rule (Luiz Carvalho)
+- Refine code for the first match wins (Chenxiong Qi)
+- Use dedent in tests when mocking modulemd data (Luiz Carvalho)
+- Only allow a single rule match (Luiz Carvalho)
+- Make docker/install-ca.sh executable (mprahl)
+- Add missing docker/install-ca.sh (mprahl)
+- Add back the volumes for improved UX in OpenShift (mprahl)
+- Connect over http when using the rcm-tools repo since the CA isn't trusted (mprahl)
+- Fix a comment in the Jenkinsfile (mprahl)
+- Add a Jenkins job to build container images and push them to quay.io (mprahl)
+- Install rhmsg in the container image (mprahl)
+- Add the ability to install a custom CA in the container image (mprahl)
+- Set the default container user to 1001 to mimic OpenShift (mprahl)
+- Add additional DNF arguments to make the container image slightly smaller (mprahl)
+- Remove the volumes in the Dockerfile that MTS doesn't write to (mprahl)
+- Don't rely on default fedmsg configuration files in the container image (mprahl)
+- Add Dockerfile for building prod image (Chenxiong Qi)
+- Allow set None to a config (Chenxiong Qi)
+- Refine configuration section in README (Chenxiong Qi)
+- Fix consumer_topics in config (Chenxiong Qi)
+- Install MTS and fedmsg.d config files (Chenxiong Qi)
+- Fix grammar issues in README (Chenxiong Qi)
+- Support multiple authtype to login a Koji session (Chenxiong Qi)
+- Refactor fedmsg.d config (Chenxiong Qi)
+- Convert README to RST format (Chenxiong Qi)
+- Login koji session by calling koji_cli.lib.activate_session (Chenxiong Qi)
+- Config update and reset methods. Extending tests for Config (Valerij Maljulin)
+- Merge __getattr__ with __getitem__ in Config class (Valerij Maljulin)
+- Adding support for profile parameter (Valerij Maljulin)
+- Base class for configuration profiles (Valerij Maljulin)
+
 0.2 (2019-01-22)
 ~~~~~~~~~~~~~~~~
 
