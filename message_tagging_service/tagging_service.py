@@ -28,6 +28,7 @@ import re
 import requests
 import yaml
 
+from collections import namedtuple
 from contextlib import contextmanager
 
 from message_tagging_service import messaging
@@ -35,6 +36,8 @@ from message_tagging_service import conf
 from message_tagging_service.utils import retrieve_modulemd_content
 
 logger = logging.getLogger(__name__)
+
+TagBuildResult = namedtuple('TagBuildResult', ['tag_name', 'task_id', 'error'])
 
 
 class RuleMatch(object):
@@ -337,9 +340,13 @@ def tag_build(nvr, dest_tags, koji_session):
     :param str nvr: build NVR.
     :param dest_tags: tag names.
     :type dest_tags: list[str]
-    :return: pair of tag names, which are tagged to build successfully, and the
-        corresponding task id returned from Koji.
-    :rtype: list[(str, int)]
+    :return: a list of tag build result info, each of them is an object of
+        ``TagBuildResult``. The first element is tag name to apply, the second
+        one is the task id return from Koji, and the last one is the error
+        message. If tag operation is requested successfully, error message is
+        set to None, otherwise None is set to task id and error message has
+        some content.
+    :rtype: list[TagBuildResult]
     """
     tagged_tags = []
     for tag in dest_tags:
@@ -349,10 +356,12 @@ def tag_build(nvr, dest_tags, koji_session):
                 task_id = 1
             else:
                 task_id = koji_session.tagBuild(tag, nvr)
-        except Exception:
-            logger.exception('Failed to tag %s to build %s', tag, nvr)
+        except Exception as e:
+            tagged_tags.append(
+                TagBuildResult(tag_name=tag, task_id=None, error=str(e)))
         else:
-            tagged_tags.append((tag, task_id))
+            tagged_tags.append(
+                TagBuildResult(tag_name=tag, task_id=task_id, error=None))
     return tagged_tags
 
 
@@ -406,13 +415,29 @@ def handle(rule_defs, event_msg):
 
             dest_tags = rule_match.dest_tags
             logger.info('Tag build %s with tag(s) %s', nvr, ', '.join(dest_tags))
-            tag_tasks_info = tag_build(nvr, dest_tags, koji_session)
+            tag_build_result = tag_build(nvr, dest_tags, koji_session)
 
-            if not tag_tasks_info:
+            failed_tasks = [item for item in tag_build_result if item.task_id is None]
+
+            if len(failed_tasks) == len(dest_tags):
                 logger.warning(
-                    'None of tag(s) %r is tagged to build %s. Skip to send message.',
-                    [tag_name for tag_name, _ in tag_tasks_info], nvr)
-                continue
+                    'None of tag(s) %r is applied to build %s successfully.',
+                    dest_tags, nvr)
+            elif len(failed_tasks) > 0:
+                logger.warning(
+                    'Tag(s) %r should be applied to build %s. But some of them,'
+                    ' %s, failed to be applied.',
+                    nvr, dest_tags, [item[0] for item in failed_tasks])
+
+            # Tag info for message sent later
+            # For a successful tag task, it is {"tag": "name", "task_id": 123}
+            # For a failure tag task, it is {"tag": "name", "task_id": None, "reason": "..."}
+            destination_tags = []
+            for result in tag_build_result:
+                data = {'tag': result.tag_name, 'task_id': result.task_id}
+                if result.task_id is None:
+                    data['error'] = result.error
+                destination_tags.append(data)
 
             messaging.publish('build.tag.requested', {
                 'build': {
@@ -423,8 +448,5 @@ def handle(rule_defs, event_msg):
                     'context': this_context,
                 },
                 'nvr': nvr,
-                'destination_tags': [
-                    {'tag': tag_name, 'task_id': task_id}
-                    for tag_name, task_id in tag_tasks_info
-                ],
+                'destination_tags': destination_tags,
             })
