@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import koji
 import os
 import pytest
 
@@ -247,16 +248,100 @@ class TestMatchRuleDefinitions(object):
                 }),
             ], any_order=True)
 
+    @pytest.mark.parametrize(
+        'tagBuild_side_effect,expected_destination_tags_for_build,'
+        'expected_destination_tags_for_devel_build',
+        [
+            # All tagBuild requests succeed
+            [
+                [1, 2, 3, 4, 5],
+                [
+                    {'tag': 'f29-modular-ursamajor', 'task_id': 1},
+                    {'tag': 'f28-modular-ursamajor', 'task_id': 2},
+                ],
+                [
+                    {'tag': 'f29-modular-ursamajor', 'task_id': 3},
+                    {'tag': 'f28-modular-ursamajor', 'task_id': 4},
+                ]
+            ],
+            # All tagBuild requests fail
+            [
+                [
+                    koji.TagError('failed to tag build'),
+                    koji.TagError('failed to tag build'),
+                    koji.TagError('failed to tag build'),
+                    koji.TagError('failed to tag build'),
+                ],
+                [
+                    {
+                        'tag': 'f29-modular-ursamajor',
+                        'task_id': None,
+                        'error': 'failed to tag build'
+                    },
+                    {
+                        'tag': 'f28-modular-ursamajor',
+                        'task_id': None,
+                        'error': 'failed to tag build'
+                    },
+                ],
+                [
+                    {
+                        'tag': 'f29-modular-ursamajor',
+                        'task_id': None,
+                        'error': 'failed to tag build'
+                    },
+                    {
+                        'tag': 'f28-modular-ursamajor',
+                        'task_id': None,
+                        'error': 'failed to tag build'
+                    },
+                ]
+            ],
+            # tagBuild requests fail for f29-* tags, but succeed for f28-*
+            [
+                [
+                    koji.TagError('failed to tag build'),
+                    1,  # Returned fake task id for applying tag f28-* to build
+                    koji.TagError('failed to tag build'),
+                    2,  # Returned fake task id for applying tag f28-* to devel build
+                ],
+                [
+                    {
+                        'tag': 'f29-modular-ursamajor',
+                        'task_id': None,
+                        'error': 'failed to tag build'
+                    },
+                    {
+                        'tag': 'f28-modular-ursamajor',
+                        'task_id': 1,
+                    },
+                ],
+                [
+                    {
+                        'tag': 'f29-modular-ursamajor',
+                        'task_id': None,
+                        'error': 'failed to tag build'
+                    },
+                    {
+                        'tag': 'f28-modular-ursamajor',
+                        'task_id': 2,
+                    },
+                ]
+            ],
+        ])
     @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
     @patch('message_tagging_service.messaging.publish')
     @patch('koji.ClientSession')
     @patch('koji.read_config')
-    def test_tag_build_with_multiple_tags(
-            self, read_config, ClientSession, publish, retrieve_modulemd_content):
+    def test_apply_multiple_tags_to_a_matched_build(
+            self, read_config, ClientSession, publish, retrieve_modulemd_content,
+            tagBuild_side_effect, expected_destination_tags_for_build,
+            expected_destination_tags_for_devel_build
+    ):
         read_config.return_value = koji_config_krb_auth
 
         # Because rule file specifies that destination tag uses the value of
-        # requires.platform, and there are two of those values in moduelmd,
+        # requires.platform, and there are two of those values in modulemd,
         # the module build should be tagged with two tags.
         retrieve_modulemd_content.return_value = dedent('''\
             ---
@@ -274,14 +359,15 @@ class TestMatchRuleDefinitions(object):
                   platform: [f29, f28]
             ''')
 
+        session = ClientSession.return_value
+        session.tagBuild.side_effect = tagBuild_side_effect
+
         rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
         with patch('requests.get') as get:
             with open(rule_file, 'r') as f:
                 get.return_value.text = f.read()
-            rule_defs = read_rule_defs()
 
-            session = ClientSession.return_value
-            session.tagBuild.side_effect = [1, 2, 3, 4, 5]
+            rule_defs = read_rule_defs()
 
             tagging_service.handle(rule_defs, {
                 'id': 1,
@@ -311,10 +397,7 @@ class TestMatchRuleDefinitions(object):
                         'stream': '1', 'version': '1', 'context': 'c1',
                     },
                     'nvr': nvr,
-                    'destination_tags': [
-                        {'tag': 'f29-modular-ursamajor', 'task_id': 1},
-                        {'tag': 'f28-modular-ursamajor', 'task_id': 2},
-                    ],
+                    'destination_tags': expected_destination_tags_for_build,
                 }),
                 call('build.tag.requested', {
                     'build': {
@@ -322,10 +405,7 @@ class TestMatchRuleDefinitions(object):
                         'stream': '1', 'version': '1', 'context': 'c1',
                     },
                     'nvr': nvr_devel,
-                    'destination_tags': [
-                        {'tag': 'f29-modular-ursamajor', 'task_id': 3},
-                        {'tag': 'f28-modular-ursamajor', 'task_id': 4},
-                    ],
+                    'destination_tags': expected_destination_tags_for_devel_build,
                 }),
             ], any_order=True)
 
