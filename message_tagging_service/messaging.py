@@ -22,7 +22,7 @@
 import logging
 import json
 
-from message_tagging_service import conf
+from message_tagging_service import conf, monitor
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,11 @@ def publish(topic, msg):
         handler = _messaging_backends[backend]['publish']
     except KeyError:
         raise KeyError(f'No messaging backend found for {backend}')
-    return handler(topic, msg)
+    try:
+        return handler(topic, msg)
+    except Exception:
+        monitor.messages_notify_errors_counter.inc()
+        logger.exception('Failed to send message to topic %s: %s', topic, msg)
 
 
 def _fedmsg_publish(topic, msg):

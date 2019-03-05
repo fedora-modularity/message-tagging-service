@@ -31,8 +31,9 @@ import yaml
 from collections import namedtuple
 from contextlib import contextmanager
 
-from message_tagging_service import messaging
 from message_tagging_service import conf
+from message_tagging_service import messaging
+from message_tagging_service import monitor
 from message_tagging_service.utils import retrieve_modulemd_content
 
 logger = logging.getLogger(__name__)
@@ -359,6 +360,7 @@ def tag_build(nvr, dest_tags, koji_session):
         except Exception as e:
             tagged_tags.append(
                 TagBuildResult(tag_name=tag, task_id=None, error=str(e)))
+            monitor.failed_tag_build_requests_counter.inc()
         else:
             tagged_tags.append(
                 TagBuildResult(tag_name=tag, task_id=task_id, error=None))
@@ -407,6 +409,8 @@ def handle(rule_defs, event_msg):
             },
         })
         return
+
+    monitor.matched_module_builds_counter.inc()
 
     stream = this_stream.replace('-', '_')
     with make_koji_session() as koji_session:

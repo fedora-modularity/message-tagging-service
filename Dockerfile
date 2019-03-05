@@ -23,6 +23,7 @@ RUN dnf install -y \
         python3-qpid-proton \
         python3-rhmsg \
         krb5-workstation \
+        python3-gunicorn
     && dnf clean all
 
 RUN sed -i '/default_ccache_name = KEYRING:persistent:%{uid}/d' /etc/krb5.conf
@@ -43,4 +44,5 @@ VOLUME /etc/mts
 # Mount to a directory holding the fedmsg config file(s)
 VOLUME /etc/fedmsg.d
 USER 1001
-CMD ["/usr/bin/bash", "-c", "docker/install-ca.sh && exec fedmsg-hub-3"]
+EXPOSE 8080
+ENTRYPOINT ["docker/entrypoint.sh"]
