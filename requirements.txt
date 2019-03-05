@@ -1,3 +1,4 @@
+Flask
 PyYAML
 fedmsg
 koji
@@ -5,4 +6,5 @@ moksha.hub
 psutil
 python-qpid-proton
 requests
+prometheus_client
 # rhmsg is not available in PyPI so far.
