@@ -24,6 +24,8 @@ RUN dnf install -y \
         python3-rhmsg \
         krb5-workstation \
         python3-gunicorn \
+        python3-flask \
+        python3-prometheus_client \
     && dnf clean all
 
 RUN sed -i '/default_ccache_name = KEYRING:persistent:%{uid}/d' /etc/krb5.conf
