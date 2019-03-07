@@ -17,7 +17,7 @@ WORKDIR /src
 # This will allow a non-root user to install a custom root CA at run-time
 COPY . .
 
-RUN docker/install-dependencies.sh $rcm_tools_repo_file && dnf clean all
+RUN docker/install-dependencies.sh $rcm_tools_repo_file
 
 # Delete the default fedmsg configuration files, and rely on the user supplying
 # the correct configuration as a mounted volume in /etc/fedmsg.d

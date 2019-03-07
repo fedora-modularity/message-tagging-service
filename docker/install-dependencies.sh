@@ -1,7 +1,10 @@
 #!/usr/bin/bash
 
+set -euo pipefail
+
+rcm_tools_repos=${1:-}
+
 # The URL to RCM Tools Fedora repos
-rcm_tools_repos=$1
 
 # Pin moksha hub to a known good version until this is fixed:
 #   https://github.com/mokshaproject/moksha/issues/69
@@ -32,3 +35,5 @@ dnf install -y \
     --setopt=install_weak_deps=false \
     --setopt=tsflags=nodocs \
     ${dependencies[@]}
+
+dnf clean all

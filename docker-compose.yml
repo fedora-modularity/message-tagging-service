@@ -1,0 +1,13 @@
+version: "2"
+
+# Use for testing container in Travis-CI job.
+
+services:
+  mts:
+    image: mts:test
+    build: .
+
+  testbox:
+    depends_on:
+    - mts
+    image: registry.fedoraproject.org/fedora:29
