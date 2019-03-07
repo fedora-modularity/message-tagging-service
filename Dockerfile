@@ -3,38 +3,22 @@ FROM registry.fedoraproject.org/fedora:29
 LABEL maintainer="Factory 2 Team" \
       description="A microservice triggered by specific message to tag a build."
 
-# This is an argument for a URL to a DNF repo file of a repo that contains python3-rhmsg
+# This is an argument for a URL to a DNF repo file of a repo that contains
+# python3-rhmsg.
+# This argument could be omitted when build image for Fedora.
 ARG rcm_tools_repo_file
-ADD $rcm_tools_repo_file /etc/yum.repos.d/rcm-tools-fedora.repo
-# Since we don't trust any internal CAs at this point, we must connect over http
-RUN sed -i 's/https:/http:/g' /etc/yum.repos.d/rcm-tools-fedora.repo
-
-# Pin moksha hub to a known good version until this is fixed:
-#   https://github.com/mokshaproject/moksha/issues/69
-RUN dnf install -y \
-        --setopt=deltarpm=0 \
-        --setopt=install_weak_deps=false \
-        --setopt=tsflags=nodocs \
-        python3-pyyaml \
-        python3-moksha-hub-1.5.13-1.fc29 \
-        python3-fedmsg \
-        python3-koji \
-        python3-requests \
-        python3-qpid-proton \
-        python3-rhmsg \
-        krb5-workstation \
-        python3-gunicorn \
-        python3-flask \
-        python3-prometheus_client \
-    && dnf clean all
 
 RUN sed -i '/default_ccache_name = KEYRING:persistent:%{uid}/d' /etc/krb5.conf
+
+RUN chmod 777 /etc/pki/tls/certs/ca-bundle.crt
 
 WORKDIR /src
 
 # This will allow a non-root user to install a custom root CA at run-time
-RUN chmod 777 /etc/pki/tls/certs/ca-bundle.crt
 COPY . .
+
+RUN docker/install-dependencies.sh $rcm_tools_repo_file && dnf clean all
+
 # Delete the default fedmsg configuration files, and rely on the user supplying
 # the correct configuration as a mounted volume in /etc/fedmsg.d
 RUN rm -rf ./fedmsg.d && rm -rf /etc/fedmsg.d
