@@ -179,6 +179,20 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.4 (2019-03-30)
+~~~~~~~~~~~~~~~~
+
+- Adjust gunicorn command line options (Chenxiong Qi)
+- Increase the number of workers to run the web app (Chenxiong Qi)
+- Set gunicorn log level to debug (Chenxiong Qi)
+- Test image build and container in Travis-CI (Chenxiong Qi)
+- Refactor Dockerfile (Chenxiong Qi)
+- Add missing deps to Dockerfile (Chenxiong Qi)
+- Add missing \ to break dnf-install command properly in Dockerfile (Chenxiong Qi)
+- Expose metrics endpoint for monitoring (Chenxiong Qi)
+- Add container badge in README (Chenxiong Qi)
+- Include failed tagBuild task request in build.tag.requested message (Chenxiong Qi)
+
 0.3 (2019-02-20)
 ~~~~~~~~~~~~~~~~
 
