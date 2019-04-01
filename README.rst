@@ -179,6 +179,11 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.4.1 (2019-04-01)
+~~~~~~~~~~~~~~~~~~
+
+- Ignore https verify while downloading ca cert (Chenxiong Qi)
+
 0.4 (2019-03-30)
 ~~~~~~~~~~~~~~~~
 
