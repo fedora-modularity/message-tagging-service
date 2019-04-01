@@ -15,7 +15,7 @@ with open('requirements.txt', 'r') as f:
 
 setup(
     name='message-tagging-service',
-    version='0.4',
+    version='0.4.1',
     description='Tag Koji build with correct tag which is triggered by message bus',
     long_description=long_description,
     maintainer='Factory 2 Team',
