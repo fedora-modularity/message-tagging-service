@@ -38,31 +38,6 @@ class TestConsumer(object):
         c.incoming = queue.Queue()
         return c
 
-    @patch.object(consumer, 'read_rule_defs')
-    @patch.object(consumer.tagging_service, 'handle')
-    def test_consume_msg(self, handle, read_rule_defs):
-        consumer = self.new_consumer()
-
-        event_msg = {'state_name': 'ready'}
-        consumer.consume({'body': {'msg': event_msg}})
-
-        handle.assert_called_once_with(read_rule_defs.return_value, event_msg)
-
-    @patch.object(consumer, 'read_rule_defs')
-    @patch.object(consumer.tagging_service, 'handle')
-    def test_ignore_message_if_not_ready(self, handle, read_rule_defs):
-        consumer = self.new_consumer()
-        consumer.consume({'body': {'msg': {
-            'name': 'modulea',
-            'stream': '10',
-            'version': '201902141503',
-            'context': '00000000',
-            'state_name': 'init',
-            'koji_tag': None,
-        }}})
-
-        handle.assert_not_called()
-
     @patch('requests.get')
     @patch.object(consumer.tagging_service, 'handle')
     def test_skip_if_rule_file_is_empty(self, handle, get):

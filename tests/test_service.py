@@ -37,7 +37,7 @@ class TestRuleDefinitionCheck(object):
             'description': 'Match any module build.',
             'destinations': 'modular-fallback-tag'
         }
-        match = tagging_service.RuleDef(rule_def).match(Mock())
+        match = tagging_service.RuleDef(rule_def).match(Mock(), 'ready')
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
@@ -51,15 +51,15 @@ class TestRuleDefinitionCheck(object):
         }
 
         modulemd = {'data': {'scratch': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd)
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
         modulemd = {'data': {'scratch': False}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
+        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
 
         modulemd = {'data': {}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
+        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
 
     def test_match_development_module_build(self):
         rule_def = {
@@ -71,15 +71,15 @@ class TestRuleDefinitionCheck(object):
         }
 
         modulemd = {'data': {'development': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd)
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
         modulemd = {'data': {'development': False}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
+        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
 
         modulemd = {'data': {}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
+        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
 
     def test_match_module_by_list_of_regex(self):
         rule_def = {
@@ -93,15 +93,15 @@ class TestRuleDefinitionCheck(object):
         }
 
         modulemd = {'data': {'name': 'javapackages-tools'}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd)
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
         assert match
         assert [r'\g<platform>-modular-ursamajor'] == match.dest_tags
 
         modulemd = {'data': {'name': 'module-a-ursamajor'}}
-        assert tagging_service.RuleDef(rule_def).match(modulemd)
+        assert tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
 
         modulemd = {'data': {'name': 'module-b'}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
+        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
 
     def test_match_module_by_dict_type_rule(self):
         rule_def = {
@@ -123,9 +123,55 @@ class TestRuleDefinitionCheck(object):
                 'requires': {'platform': ['f28']},
             }]
         }}
-        match = tagging_service.RuleDef(rule_def).match(modulemd)
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
         assert match
         assert ['f28-modular-ursamajor'] == match.dest_tags
+
+    @pytest.mark.parametrize('rule', [
+        {'development': True},
+        {'development': True, 'build_state': 'done'},
+    ])
+    def test_build_state_is_not_matched(self, rule):
+        rule_def = {
+            'id': 'Simple match by development',
+            'type': 'module',
+            'rule': rule,
+            'description': 'Match module build by development.',
+            'destinations': 'modular-fallback-tag'
+        }
+
+        modulemd = {'data': {'development': True}}
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'build')
+        assert not match
+
+    def test_match_module_by_build_state_in_rule(self):
+        rule_def = {
+            'id': 'Simple match by development',
+            'type': 'module',
+            'rule': {'development': True, 'build_state': 'done'},
+            'description': 'Match module build by development.',
+            'destinations': 'modular-fallback-tag'
+        }
+
+        modulemd = {'data': {'development': True}}
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'done')
+        assert match
+        assert ['modular-fallback-tag'] == match.dest_tags
+
+    @patch.object(tagging_service.conf, 'build_state', new='build')
+    def test_match_build_state_according_to_conf(self):
+        rule_def = {
+            'id': 'Simple match by development',
+            'type': 'module',
+            'rule': {'development': True},
+            'description': 'Match module build by development.',
+            'destinations': 'modular-build'
+        }
+
+        modulemd = {'data': {'development': True}}
+        match = tagging_service.RuleDef(rule_def).match(modulemd, 'build')
+        assert match
+        assert ['modular-build'] == match.dest_tags
 
 
 class TestMatchRuleDefinitions(object):

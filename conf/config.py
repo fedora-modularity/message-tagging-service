@@ -65,6 +65,10 @@ class BaseConfiguration:
     # Example: https://example.com/rules/mts-rules.yaml
     rules_file_url = ''
 
+    # Default build state. Module builds which are in this state will be
+    # tagged if no build state is specified in rule explicitly.
+    build_state = 'ready'
+
 
 class DevConfiguration(BaseConfiguration):
     koji_profile = 'stg'

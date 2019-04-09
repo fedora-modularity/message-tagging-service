@@ -104,7 +104,7 @@ class RuleDef(object):
         #   rule:
         #   destination: xxx
         # In this case, parsed YAML dict has key/value: {'rule': None}
-        return self.data.get('rule')
+        return self.data.get('rule', {})
 
     @property
     def destinations(self):
@@ -198,7 +198,7 @@ class RuleDef(object):
                 break
         return match
 
-    def match(self, modulemd):
+    def match(self, modulemd, build_state):
         """Check if a rule definition matches a module
 
         The match implementation follows
@@ -208,17 +208,25 @@ class RuleDef(object):
         :return: a RuleMatch object to indicate whether modulemd matches the rule.
         :rtype: :class:`RuleMatch`
         """
-        if self.rule is None:
-            logger.debug(
-                'No rule criteria is defined. Build will be tagged to %s',
-                self.destinations)
-            return RuleMatch(True, [self.destinations])
+        rule = self.rule
 
-        for property, expected in self.rule.items():
+        if 'build_state' not in rule:
+            # Inject build_state explicitly for easy match below
+            rule['build_state'] = conf.build_state
+
+        for property, expected in rule.items():
+            if property == 'build_state':
+                if expected == build_state:
+                    logger.debug('Match build state "%s".', expected)
+                    self._property_matches.append(True)
+                else:
+                    logger.debug('Does not match build state "%s".', expected)
+                    self._property_matches.append(False)
+
             # Both scratch and development have default value to compare with
             # expected in rule definition.
 
-            if property == 'scratch':
+            elif property == 'scratch':
                 mmd_value = modulemd['data'].get("scratch", False)
                 if expected == mmd_value:
                     logger.debug('Rule/Value: %s: %s. Matched.', property, expected)
@@ -389,7 +397,7 @@ def handle(rule_defs, event_msg):
     for i, rule_def in enumerate(rule_defs, 1):
         rd = RuleDef(rule_def)
         logger.info('[%s] Checking rule definition: %s', i, rd.id)
-        match = rd.match(modulemd)
+        match = rd.match(modulemd, event_msg['state_name'])
         if match:
             logger.info('[%d] Rule definition: Matched. Remaining rules ignored.', i)
             rule_match = match

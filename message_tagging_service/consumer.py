@@ -40,13 +40,6 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
     def consume(self, msg):
         logger.debug('Got message: %r', msg)
 
-        event_msg = msg['body']['msg']
-        if event_msg['state_name'] != 'ready':
-            logger.info('Skip module build %s-%s-%s-%s as it is not in ready state yet.',
-                        event_msg['name'], event_msg['stream'],
-                        event_msg['version'], event_msg['context'])
-            return
-
         try:
             rule_defs = read_rule_defs()
         except requests.exceptions.HTTPError:
@@ -55,4 +48,4 @@ class MTSConsumer(fedmsg.consumers.FedmsgConsumer):
             # For an empty yaml file, YAML returns None. So, if the remote rule
             # file is empty, catch this case and skip to handle the tag.
             if rule_defs is not None:
-                tagging_service.handle(rule_defs, event_msg)
+                tagging_service.handle(rule_defs, msg['body']['msg'])
