@@ -198,7 +198,7 @@ class RuleDef(object):
                 break
         return match
 
-    def match(self, modulemd, build_state):
+    def match(self, modulemd):
         """Check if a rule definition matches a module
 
         The match implementation follows
@@ -210,23 +210,11 @@ class RuleDef(object):
         """
         rule = self.rule
 
-        if 'build_state' not in rule:
-            # Inject build_state explicitly for easy match below
-            rule['build_state'] = conf.build_state
-
         for property, expected in rule.items():
-            if property == 'build_state':
-                if expected == build_state:
-                    logger.debug('Match build state "%s".', expected)
-                    self._property_matches.append(True)
-                else:
-                    logger.debug('Does not match build state "%s".', expected)
-                    self._property_matches.append(False)
-
             # Both scratch and development have default value to compare with
             # expected in rule definition.
 
-            elif property == 'scratch':
+            if property == 'scratch':
                 mmd_value = modulemd['data'].get("scratch", False)
                 if expected == mmd_value:
                     logger.debug('Rule/Value: %s: %s. Matched.', property, expected)
@@ -376,11 +364,31 @@ def tag_build(nvr, dest_tags, koji_session):
 
 
 def handle(rule_defs, event_msg):
+    """Handle MBS build.state.change event"""
+
     this_name = event_msg["name"]
     this_stream = event_msg["stream"]
     this_version = event_msg["version"]
     this_context = event_msg["context"]
     nsvc = f"{this_name}-{this_stream}-{this_version}-{this_context}"
+    state_name = event_msg['state_name']
+
+    # Rule definitions are grouped by build state:
+    # ready: [{...}, {...}]
+    # done: [{...}, {...}, {...}]
+    rules_by_state = {}
+    for i, rule_def in enumerate(rule_defs, 1):
+        # Rule definitions are grouped by build state in rules_by_state, so
+        # it is not necessary to keep build state in rule definition.
+        build_state = rule_def.get('rule', {}).pop('build_state', conf.build_state)
+        # Keep the original index number so that it could be shown in logs
+        rules_by_state.setdefault(build_state, []).append((i, rule_def))
+
+    if state_name not in rules_by_state:
+        logger.info('Skip module build %s. It is in state "%s", no rule is '
+                    'defined for this state.',
+                    nsvc, state_name)
+        return
 
     try:
         modulemd = yaml.safe_load(retrieve_modulemd_content(event_msg['id']))
@@ -394,10 +402,10 @@ def handle(rule_defs, event_msg):
     logger.debug('Modulemd file is downloaded and parsed.')
 
     rule_match = None
-    for i, rule_def in enumerate(rule_defs, 1):
+    for i, rule_def in rules_by_state[state_name]:
         rd = RuleDef(rule_def)
         logger.info('[%s] Checking rule definition: %s', i, rd.id)
-        match = rd.match(modulemd, event_msg['state_name'])
+        match = rd.match(modulemd)
         if match:
             logger.info('[%d] Rule definition: Matched. Remaining rules ignored.', i)
             rule_match = match

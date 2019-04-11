@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import contextlib
 import koji
 import os
 import pytest
@@ -27,6 +28,14 @@ koji_config_krb_auth = {
 }
 
 
+@contextlib.contextmanager
+def mock_get_rule_file(rule_file):
+    with patch('requests.get') as get:
+        with open(rule_file, 'r') as f:
+            get.return_value.text = f.read()
+        yield
+
+
 class TestRuleDefinitionCheck(object):
     """Test rule_matches_module_build"""
 
@@ -37,7 +46,7 @@ class TestRuleDefinitionCheck(object):
             'description': 'Match any module build.',
             'destinations': 'modular-fallback-tag'
         }
-        match = tagging_service.RuleDef(rule_def).match(Mock(), 'ready')
+        match = tagging_service.RuleDef(rule_def).match(Mock())
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
@@ -51,15 +60,15 @@ class TestRuleDefinitionCheck(object):
         }
 
         modulemd = {'data': {'scratch': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
         modulemd = {'data': {'scratch': False}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        assert not tagging_service.RuleDef(rule_def).match(modulemd)
 
         modulemd = {'data': {}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        assert not tagging_service.RuleDef(rule_def).match(modulemd)
 
     def test_match_development_module_build(self):
         rule_def = {
@@ -71,15 +80,15 @@ class TestRuleDefinitionCheck(object):
         }
 
         modulemd = {'data': {'development': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
         modulemd = {'data': {'development': False}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        assert not tagging_service.RuleDef(rule_def).match(modulemd)
 
         modulemd = {'data': {}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        assert not tagging_service.RuleDef(rule_def).match(modulemd)
 
     def test_match_module_by_list_of_regex(self):
         rule_def = {
@@ -93,15 +102,15 @@ class TestRuleDefinitionCheck(object):
         }
 
         modulemd = {'data': {'name': 'javapackages-tools'}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
         assert [r'\g<platform>-modular-ursamajor'] == match.dest_tags
 
         modulemd = {'data': {'name': 'module-a-ursamajor'}}
-        assert tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        assert tagging_service.RuleDef(rule_def).match(modulemd)
 
         modulemd = {'data': {'name': 'module-b'}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        assert not tagging_service.RuleDef(rule_def).match(modulemd)
 
     def test_match_module_by_dict_type_rule(self):
         rule_def = {
@@ -123,65 +132,40 @@ class TestRuleDefinitionCheck(object):
                 'requires': {'platform': ['f28']},
             }]
         }}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'ready')
+        match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
         assert ['f28-modular-ursamajor'] == match.dest_tags
-
-    @pytest.mark.parametrize('rule', [
-        {'development': True},
-        {'development': True, 'build_state': 'done'},
-    ])
-    def test_build_state_is_not_matched(self, rule):
-        rule_def = {
-            'id': 'Simple match by development',
-            'type': 'module',
-            'rule': rule,
-            'description': 'Match module build by development.',
-            'destinations': 'modular-fallback-tag'
-        }
-
-        modulemd = {'data': {'development': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'build')
-        assert not match
-
-    def test_match_module_by_build_state_in_rule(self):
-        rule_def = {
-            'id': 'Simple match by development',
-            'type': 'module',
-            'rule': {'development': True, 'build_state': 'done'},
-            'description': 'Match module build by development.',
-            'destinations': 'modular-fallback-tag'
-        }
-
-        modulemd = {'data': {'development': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'done')
-        assert match
-        assert ['modular-fallback-tag'] == match.dest_tags
-
-    @patch.object(tagging_service.conf, 'build_state', new='build')
-    def test_match_build_state_according_to_conf(self):
-        rule_def = {
-            'id': 'Simple match by development',
-            'type': 'module',
-            'rule': {'development': True},
-            'description': 'Match module build by development.',
-            'destinations': 'modular-build'
-        }
-
-        modulemd = {'data': {'development': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd, 'build')
-        assert match
-        assert ['modular-build'] == match.dest_tags
 
 
 class TestMatchRuleDefinitions(object):
 
-    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
+    def setup_method(self, test_method):
+        self.p_read_config = patch('koji.read_config',
+                                   return_value=koji_config_krb_auth)
+        self.mock_read_config = self.p_read_config.start()
+
+        self.p_retrieve_modulemd_content = patch(
+            'message_tagging_service.tagging_service.retrieve_modulemd_content')
+        self.mock_retrieve_modulemd_content = self.p_retrieve_modulemd_content.start()
+
+        self.p_publish = patch('message_tagging_service.messaging.publish')
+        self.mock_publish = self.p_publish.start()
+
+        self.p_ClientSesison = patch('koji.ClientSession')
+        self.mock_ClientSession = self.p_ClientSesison.start()
+
+    def teardown_method(self, test_method):
+        self.p_ClientSesison.stop()
+        self.p_publish.stop()
+        self.p_retrieve_modulemd_content.stop()
+        self.p_read_config.stop()
+
     @patch('message_tagging_service.tagging_service.tag_build')
-    def test_not_tag_build_if_no_rules_are_matched(
-            self, tag_build, retrieve_modulemd_content):
+    @mock_get_rule_file(os.path.join(
+        test_data_dir, 'mts-test-for-no-match.yaml'))
+    def test_not_tag_build_if_no_rules_are_matched(self, tag_build):
         # Note that, platform does not match the rule in rule file.
-        retrieve_modulemd_content.return_value = dedent('''\
+        self.mock_retrieve_modulemd_content.return_value = dedent('''\
             ---
             document: modulemd
             version: 2
@@ -197,11 +181,7 @@ class TestMatchRuleDefinitions(object):
                   platform: [el8]
             ''')
 
-        rule_file = os.path.join(test_data_dir, 'mts-test-for-no-match.yaml')
-        with patch('requests.get') as get:
-            with open(rule_file, 'r') as f:
-                get.return_value.text = f.read()
-            rule_defs = read_rule_defs()
+        rule_defs = read_rule_defs()
 
         with patch.object(tagging_service.logger, 'info') as info:
             # Note that, no module property matches rule in rule file.
@@ -218,16 +198,11 @@ class TestMatchRuleDefinitions(object):
                 info.call_args[0]
             tag_build.assert_not_called()
 
-    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
-    @patch('message_tagging_service.messaging.publish')
-    @patch('koji.ClientSession')
-    @patch('koji.read_config')
-    def test_tag_build_if_match_one_rule_only(
-            self, read_config, ClientSession, publish, retrieve_modulemd_content):
-        read_config.return_value = koji_config_krb_auth
+    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
+    def test_tag_build_if_match_one_rule_only(self):
 
         # Note that, platform does not match the rule in rule file.
-        retrieve_modulemd_content.return_value = dedent('''\
+        self.mock_retrieve_modulemd_content.return_value = dedent('''\
             ---
             document: modulemd
             version: 2
@@ -243,56 +218,51 @@ class TestMatchRuleDefinitions(object):
                   platform: [f29]
             ''')
 
-        rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch('requests.get') as get:
-            with open(rule_file, 'r') as f:
-                get.return_value.text = f.read()
-            rule_defs = read_rule_defs()
+        session = self.mock_ClientSession.return_value
+        session.tagBuild.side_effect = [1, 2, 3]
 
-            session = ClientSession.return_value
-            session.tagBuild.side_effect = [1, 2, 3]
+        rule_defs = read_rule_defs()
+        tagging_service.handle(rule_defs, {
+            'id': 1,
+            'name': 'javapackages-tools',
+            'stream': '1',
+            'version': '1',
+            'context': 'c1',
+            'state_name': 'ready',
+        })
 
-            tagging_service.handle(rule_defs, {
-                'id': 1,
-                'name': 'javapackages-tools',
-                'stream': '1',
-                'version': '1',
-                'context': 'c1',
-                'state_name': 'ready',
-            })
+        nvr = 'javapackages-tools-1-1.c1'
+        nvr_devel = 'javapackages-tools-devel-1-1.c1'
+        session.tagBuild.assert_has_calls([
+            call('f29-modular-ursamajor', nvr),
+            call('f29-modular-ursamajor', nvr_devel),
+        ], any_order=True)
 
-            nvr = 'javapackages-tools-1-1.c1'
-            nvr_devel = 'javapackages-tools-devel-1-1.c1'
-            session.tagBuild.assert_has_calls([
-                call('f29-modular-ursamajor', nvr),
-                call('f29-modular-ursamajor', nvr_devel),
-            ], any_order=True)
-
-            # 2 messages should be sent:
-            # javapackages-tools: f29
-            # javapackages-tools-devel: f29
-            publish.assert_has_calls([
-                call('build.tag.requested', {
-                    'build': {
-                        'id': 1, 'name': 'javapackages-tools',
-                        'stream': '1', 'version': '1', 'context': 'c1',
-                    },
-                    'nvr': nvr,
-                    'destination_tags': [
-                        {'tag': 'f29-modular-ursamajor', 'task_id': 1},
-                    ],
-                }),
-                call('build.tag.requested', {
-                    'build': {
-                        'id': 1, 'name': 'javapackages-tools-devel',
-                        'stream': '1', 'version': '1', 'context': 'c1',
-                    },
-                    'nvr': nvr_devel,
-                    'destination_tags': [
-                        {'tag': 'f29-modular-ursamajor', 'task_id': 2},
-                    ],
-                }),
-            ], any_order=True)
+        # 2 messages should be sent:
+        # javapackages-tools: f29
+        # javapackages-tools-devel: f29
+        self.mock_publish.assert_has_calls([
+            call('build.tag.requested', {
+                'build': {
+                    'id': 1, 'name': 'javapackages-tools',
+                    'stream': '1', 'version': '1', 'context': 'c1',
+                },
+                'nvr': nvr,
+                'destination_tags': [
+                    {'tag': 'f29-modular-ursamajor', 'task_id': 1},
+                ],
+            }),
+            call('build.tag.requested', {
+                'build': {
+                    'id': 1, 'name': 'javapackages-tools-devel',
+                    'stream': '1', 'version': '1', 'context': 'c1',
+                },
+                'nvr': nvr_devel,
+                'destination_tags': [
+                    {'tag': 'f29-modular-ursamajor', 'task_id': 2},
+                ],
+            }),
+        ], any_order=True)
 
     @pytest.mark.parametrize(
         'tagBuild_side_effect,expected_destination_tags_for_build,'
@@ -375,21 +345,18 @@ class TestMatchRuleDefinitions(object):
                 ]
             ],
         ])
-    @patch('message_tagging_service.tagging_service.retrieve_modulemd_content')
-    @patch('message_tagging_service.messaging.publish')
-    @patch('koji.ClientSession')
-    @patch('koji.read_config')
+    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
     def test_apply_multiple_tags_to_a_matched_build(
-            self, read_config, ClientSession, publish, retrieve_modulemd_content,
-            tagBuild_side_effect, expected_destination_tags_for_build,
+            self,
+            tagBuild_side_effect,
+            expected_destination_tags_for_build,
             expected_destination_tags_for_devel_build
     ):
-        read_config.return_value = koji_config_krb_auth
 
         # Because rule file specifies that destination tag uses the value of
         # requires.platform, and there are two of those values in modulemd,
         # the module build should be tagged with two tags.
-        retrieve_modulemd_content.return_value = dedent('''\
+        self.mock_retrieve_modulemd_content.return_value = dedent('''\
             ---
             document: modulemd
             version: 2
@@ -405,55 +372,92 @@ class TestMatchRuleDefinitions(object):
                   platform: [f29, f28]
             ''')
 
-        session = ClientSession.return_value
+        session = self.mock_ClientSession.return_value
         session.tagBuild.side_effect = tagBuild_side_effect
 
-        rule_file = os.path.join(test_data_dir, 'mts-test-rules.yaml')
-        with patch('requests.get') as get:
-            with open(rule_file, 'r') as f:
-                get.return_value.text = f.read()
+        rule_defs = read_rule_defs()
+        tagging_service.handle(rule_defs, {
+            'id': 1,
+            'name': 'javapackages-tools',
+            'stream': '1',
+            'version': '1',
+            'context': 'c1',
+            'state_name': 'ready',
+        })
 
-            rule_defs = read_rule_defs()
+        nvr = 'javapackages-tools-1-1.c1'
+        nvr_devel = 'javapackages-tools-devel-1-1.c1'
+        session.tagBuild.assert_has_calls([
+            call('f29-modular-ursamajor', nvr),
+            call('f28-modular-ursamajor', nvr),
+            call('f29-modular-ursamajor', nvr_devel),
+            call('f28-modular-ursamajor', nvr_devel),
+        ], any_order=True)
 
-            tagging_service.handle(rule_defs, {
-                'id': 1,
-                'name': 'javapackages-tools',
-                'stream': '1',
-                'version': '1',
-                'context': 'c1',
-                'state_name': 'ready',
-            })
+        # 2 messages should be sent:
+        # javapackages-tools: f29, f28
+        # javapackages-tools-devel: f29, f28
+        self.mock_publish.assert_has_calls([
+            call('build.tag.requested', {
+                'build': {
+                    'id': 1, 'name': 'javapackages-tools',
+                    'stream': '1', 'version': '1', 'context': 'c1',
+                },
+                'nvr': nvr,
+                'destination_tags': expected_destination_tags_for_build,
+            }),
+            call('build.tag.requested', {
+                'build': {
+                    'id': 1, 'name': 'javapackages-tools-devel',
+                    'stream': '1', 'version': '1', 'context': 'c1',
+                },
+                'nvr': nvr_devel,
+                'destination_tags': expected_destination_tags_for_devel_build,
+            }),
+        ], any_order=True)
 
-            nvr = 'javapackages-tools-1-1.c1'
-            nvr_devel = 'javapackages-tools-devel-1-1.c1'
+    @pytest.mark.parametrize('build_state', ['done', 'build'])
+    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
+    def test_match_module_by_build_state_in_rule(self, build_state):
+        self.mock_retrieve_modulemd_content.return_value = dedent('''\
+            ---
+            document: modulemd
+            version: 2
+            data:
+              name: nodejs
+              stream: 10
+              version: 1
+              context: c1
+              dependencies:
+              - buildrequires:
+                  platform: [f29]
+                requires:
+                  platform: [f29]
+            ''')
+
+        session = self.mock_ClientSession.return_value
+        session.tagBuild.side_effect = [1, 2, 3]
+
+        rule_defs = read_rule_defs()
+        tagging_service.handle(rule_defs, {
+            'id': 1,
+            'name': 'nodejs',
+            'stream': '10',
+            'version': '1',
+            'context': 'c1',
+            'state_name': build_state,
+        })
+
+        if build_state == 'done':
             session.tagBuild.assert_has_calls([
-                call('f29-modular-ursamajor', nvr),
-                call('f28-modular-ursamajor', nvr),
-                call('f29-modular-ursamajor', nvr_devel),
-                call('f28-modular-ursamajor', nvr_devel),
+                call('f29-modular-gating', 'nodejs-10-1.c1'),
+                call('f29-modular-gating', 'nodejs-devel-10-1.c1'),
             ], any_order=True)
-
-            # 2 messages should be sent:
-            # javapackages-tools: f29, f28
-            # javapackages-tools-devel: f29, f28
-            publish.assert_has_calls([
-                call('build.tag.requested', {
-                    'build': {
-                        'id': 1, 'name': 'javapackages-tools',
-                        'stream': '1', 'version': '1', 'context': 'c1',
-                    },
-                    'nvr': nvr,
-                    'destination_tags': expected_destination_tags_for_build,
-                }),
-                call('build.tag.requested', {
-                    'build': {
-                        'id': 1, 'name': 'javapackages-tools-devel',
-                        'stream': '1', 'version': '1', 'context': 'c1',
-                    },
-                    'nvr': nvr_devel,
-                    'destination_tags': expected_destination_tags_for_devel_build,
-                }),
-            ], any_order=True)
+        elif build_state == 'build':
+            # The rule file for this test does not any rule defined for state
+            # "build", so no rule is matched, then no tag should be applied to
+            # the fake module build.
+            session.tagBuild.assert_not_called()
 
 
 class TestLoginKoji(object):
