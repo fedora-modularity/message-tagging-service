@@ -18,6 +18,20 @@
       development: no
   destinations: '\g<platform>-modular-ursamajor'
 
+- id: Tag for done state
+  description: Gating builds
+  type: module
+  rule:
+      dependencies:
+          buildrequires:
+              platform: '^.*$'
+          requires:
+              platform: '^(?P<platform>f\d+)$'
+      scratch: no
+      development: no
+      build_state: done
+  destinations: '\g<platform>-modular-gating'
+
 - id: Modular Python for Fedora
   description: Python Fedora modular builds
   type: module
