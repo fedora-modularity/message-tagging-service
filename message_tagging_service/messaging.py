@@ -43,7 +43,7 @@ def publish(topic, msg):
     try:
         return handler(topic, msg)
     except Exception:
-        monitor.messages_notify_errors_counter.inc()
+        monitor.messaging_tx_failed_counter.inc()
         logger.exception('Failed to send message to topic %s: %s', topic, msg)
 
 

@@ -52,8 +52,8 @@ matched_module_builds_counter = Counter(
     registry=registry
 )
 
-messages_notify_errors_counter = Counter(
-    'messages_notify_errors',
+messaging_tx_failed_counter = Counter(
+    'messaging_tx_failed',
     'The number of errors occurred during sending message to bus.',
     registry=registry
 )
