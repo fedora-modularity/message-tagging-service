@@ -179,6 +179,13 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.5 (2019-04-15)
+~~~~~~~~~~~~~~~~
+
+- Change metric name to be in sync with other services (Filip Valder)
+- Reduce the number of tries to match rules (Chenxiong Qi)
+- Match module build by build state (Chenxiong Qi)
+
 0.4.1 (2019-04-01)
 ~~~~~~~~~~~~~~~~~~
 
