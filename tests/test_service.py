@@ -509,7 +509,7 @@ class TestLoginKoji(object):
         session.getAPIVersion.return_value = 1
 
         with pytest.raises(
-                IOError, message='SSL certificate path/to/cert is not readable.'):
+                IOError, match='SSL certificate path/to/cert is not readable.'):
             tagging_service.login_koji(session, {
                 'authtype': 'kerberos',
                 'serverca': '',
