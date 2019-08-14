@@ -3,6 +3,10 @@ FROM registry.fedoraproject.org/fedora:29
 LABEL maintainer="Factory 2 Team" \
       description="A microservice triggered by specific message to tag a build."
 
+# Required if running in Fedora with fedmsg to publish message.
+# Check this again after migrating to fedora-messaging. If it is not required, remove it.
+ENV USER=mts
+
 # This is an argument for a URL to a DNF repo file of a repo that contains
 # python3-rhmsg.
 # This argument could be omitted when build image for Fedora.
