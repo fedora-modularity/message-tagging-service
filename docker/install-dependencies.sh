@@ -18,7 +18,6 @@ dependencies=(
     python3-gunicorn
     python3-flask
     python3-prometheus_client
-    krb5-workstation
 )
 
 if [ -n "$rcm_tools_repos" ]; then
@@ -29,8 +28,6 @@ if [ -n "$rcm_tools_repos" ]; then
     sed -i 's/https:/http:/g' $repo_file
 
     dependencies+=(python3-rhmsg)
-else
-    dependencies+=(fedora-packager koji)
 fi
 
 dnf install -y \
