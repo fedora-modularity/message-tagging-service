@@ -19,6 +19,7 @@
 #
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
+import os
 import requests
 import yaml
 import logging
@@ -53,3 +54,7 @@ def read_rule_defs():
     r = requests.get(conf.rules_file_url)
     r.raise_for_status()
     return yaml.safe_load(r.text)
+
+
+def is_file_readable(filename):
+    return os.path.exists(filename) and os.access(filename, os.R_OK)

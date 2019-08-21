@@ -23,7 +23,6 @@
 import koji
 import koji_cli.lib
 import logging
-import os
 import re
 import requests
 import yaml
@@ -34,6 +33,7 @@ from contextlib import contextmanager
 from message_tagging_service import conf
 from message_tagging_service import messaging
 from message_tagging_service import monitor
+from message_tagging_service.utils import is_file_readable
 from message_tagging_service.utils import retrieve_modulemd_content
 
 logger = logging.getLogger(__name__)
@@ -300,7 +300,7 @@ def login_koji(session, config):
     cfg = config.copy()
     use_ssl = getattr(conf, 'koji_cert', None) is not None
     if use_ssl:
-        if os.path.exists(conf.koji_cert) and os.access(conf.koji_cert, os.R_OK):
+        if is_file_readable(conf.koji_cert):
             logger.info('conf.koji_cert is set. Use ssl authtype.')
             cfg['cert'] = conf.koji_cert
             cfg['authtype'] = 'ssl'
@@ -308,8 +308,7 @@ def login_koji(session, config):
             raise IOError(f'SSL certificate {conf.koji_cert} is not readable.')
     else:
         # otherwise, do the default authtype: kerberos
-        if (conf.keytab and os.path.exists(conf.keytab) and
-                os.access(conf.keytab, os.R_OK) and conf.principal):
+        if conf.keytab and is_file_readable(conf.keytab) and conf.principal:
             cfg['keytab'] = conf.keytab
             cfg['principal'] = conf.principal
 
