@@ -298,7 +298,7 @@ def login_koji(session, config):
     # Loaded koji config is a simple dict without nested dict. dict.copy just
     # works well.
     cfg = config.copy()
-    use_ssl = conf.koji_cert is not None
+    use_ssl = getattr(conf, 'koji_cert', None) is not None
     if use_ssl:
         if os.path.exists(conf.koji_cert) and os.access(conf.koji_cert, os.R_OK):
             logger.info('conf.koji_cert is set. Use ssl authtype.')
