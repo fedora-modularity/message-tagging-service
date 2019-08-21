@@ -322,10 +322,10 @@ def make_koji_session():
     session_opts = koji.grab_session_options(koji_config)
     koji_session = koji.ClientSession(koji_config['server'], opts=session_opts)
     login_koji(koji_session, koji_config)
-
-    yield koji_session
-
-    koji_session.logout()
+    try:
+        yield koji_session
+    finally:
+        koji_session.logout()
 
 
 def tag_build(nvr, dest_tags, koji_session):
