@@ -19,34 +19,27 @@
 #
 # Authors: Chenxiong Qi
 
-import queue
-
-from mock import MagicMock
 from mock import patch
-
 from message_tagging_service import consumer
+from message_tagging_service.consumer import RHMessage
 
 
 class TestConsumer(object):
-
-    def new_consumer(self):
-        hub = MagicMock()
-        hub.config = {}
-        hub.config['mts-consumer'] = True
-        hub.config['validate_signatures'] = False
-        c = consumer.MTSConsumer(hub)
-        c.incoming = queue.Queue()
-        return c
 
     @patch('requests.get')
     @patch.object(consumer.tagging_service, 'handle')
     def test_skip_if_rule_file_is_empty(self, handle, get):
         get.return_value.text = '---'
 
-        consumer = self.new_consumer()
-        consumer.consume({'body': {'msg': {
-            'state_name': 'ready',
-            'koji_tag': 'module-modulea-1-1-c1',
-        }}})
+        consumer.consume(RHMessage({
+            'msg': {
+                'name': 'modulea',
+                'stream': 10,
+                'version': '20190830094130',
+                'context': 'c1',
+                'state_name': 'ready',
+                'koji_tag': 'module-modulea-1-1-c1',
+            }
+        }))
 
         handle.assert_not_called()

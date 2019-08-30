@@ -47,15 +47,14 @@ def publish(topic, msg):
         logger.exception('Failed to send message to topic %s: %s', topic, msg)
 
 
-def _fedmsg_publish(topic, msg):
-    # fedmsg doesn't really need access to conf, however other backends do
-    import fedmsg
-    config = conf.messaging_backends['fedmsg']
+def _fedora_messaging_publish(topic, msg):
+    from fedora_messaging import api, message
+
     if conf.dry_run:
-        logger.info("DRY-RUN: fedmsg.publish('%s', msg=%s, modname='%s')",
-                    topic, msg, config['service'])
+        logger.info('DRY-RUN: send message to fedora-messaging, '
+                    'topic: %s, msg: %s', topic, msg)
     else:
-        return fedmsg.publish(topic, msg=msg, modname=config['service'])
+        api.publish(message.Message(topic=topic, body=msg))
 
 
 def _rhmsg_publish(topic, msg):
@@ -68,16 +67,14 @@ def _rhmsg_publish(topic, msg):
     import proton
     from rhmsg.activemq.producer import AMQProducer
 
-    config = conf.messaging_backends['rhmsg']
     producer_config = {
-        'urls': config['brokers'],
-        'certificate': config['certificate'],
-        'private_key': config['private_key'],
-        'trusted_certificates': config['ca_cert'],
+        'urls': conf.rhmsg_brokers,
+        'certificate': conf.rhmsg_certificate,
+        'private_key': conf.rhmsg_private_key,
+        'trusted_certificates': conf.rhmsg_ca_cert,
     }
     with AMQProducer(**producer_config) as producer:
-        prefix = config['topic_prefix'].rstrip('.')
-        topic = f'{prefix}.{topic}'
+        topic = f'{conf.rhmsg_topic_prefix.rstrip(".")}.{topic}'
         producer.through_topic(topic)
 
         outgoing_msg = proton.Message()
@@ -90,8 +87,8 @@ def _rhmsg_publish(topic, msg):
 
 
 _messaging_backends = {
-    'fedmsg': {
-        'publish': _fedmsg_publish
+    'fedora-messaging': {
+        'publish': _fedora_messaging_publish
     },
     'rhmsg': {
         'publish': _rhmsg_publish

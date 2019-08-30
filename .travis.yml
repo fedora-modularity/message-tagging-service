@@ -23,4 +23,5 @@ jobs:
     script:
     # Not test all aspects of container. Currently, just test the metrics
     # endpoint, which could catch most potential issues to up a container.
-    - docker-compose run testbox /bin/bash -c "curl --silent http://mts:8080/monitor/metrics | grep matched_module_builds"
+    #- docker-compose run testbox /bin/bash -c "curl --silent http://mts:8080/monitor/metrics | grep matched_module_builds"
+    - docker-compose run testbox /bin/bash -c "curl --verbose --silent http://mts:8080/monitor/metrics"

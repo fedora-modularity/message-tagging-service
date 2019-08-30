@@ -27,36 +27,26 @@ class BaseConfiguration:
     # default or configured Kerberos ccache will be used to get ticket. That
     # means kinit should be run with the keytab and principal in advance.
 
-    # Messages sent to these topics will be handled.
-    # For internal, it is set to a UMB queue name, for example,
+    # Please note that, no specific config for fedora-messaging is defined here.
+    # Instead, refer to mts.toml for the complete configuration.
+    # Set this to rhmsg for interacting with UMB.
+    messaging_backend = 'fedora-messaging'
+
+    # Broker URIs to connect, e.g. ['amqps://host:5671', 'amqps://anotherhost:5671']
+    rhmsg_brokers = []
+    # Absolute path to certificate file used to authenticate MTS
+    rhmsg_certificate = ''
+    # Absolute path to private key file used to authenticate MTS
+    rhmsg_private_key = ''
+    # Absolute path to trusted CA certificate bundle.
+    rhmsg_ca_cert = ''
+    # topic like build.tag.requested is passed to publish function to
+    # generalize the messaging publish interface. For rhmsg, this
+    # topic_prefix is used to construct full topic in order to send message.
+    rhmsg_topic_prefix = 'VirtualTopic.eng.mts'
+    # Queue name to receive message from. For example:
     # Consumer.client-mts.queue.VirtualTopic.eng.mbs.module.state.change
-    consumer_topics = [
-        'org.fedoraproject.prod.mbs.module.state.change',
-    ]
-
-    # Indicate which messaging backend will be used to send message.
-    # Choices: fedmsg and rhmsg. For internal, set it to rhmsg.
-    messaging_backend = 'fedmsg'
-
-    # Define messaging backends for sending messages to message bus. In Fedora,
-    # it is fedmsg, rhmsg for internal.
-    messaging_backends = {
-        'fedmsg': {
-            'service': 'mts',
-        },
-        'rhmsg': {
-            # Broker URIs to connect, e.g. ['amqps://host:5671', 'amqps://anotherhost:5671']
-            'brokers': [],
-            # Absolute path to certificate file used to authenticate freshmaker
-            'certificate': '',
-            # Absolute path to private key file used to authenticate freshmaker
-            'private_key': '',
-            # Absolute path to trusted CA certificate bundle.
-            'ca_cert': '',
-            # Prefix to construct full topic to send message
-            'topic_prefix': 'VirtualTopic.eng.mts',
-        },
-    }
+    rhmsg_queue = 'Consumer.client-mts.queue.VirtualTopic.eng.mbs.module.state.change'
 
     # Default is INFO. Refer to Python logging module to know valid values.
     log_level = 'INFO'
@@ -72,10 +62,6 @@ class BaseConfiguration:
 
 class DevConfiguration(BaseConfiguration):
     koji_profile = 'stg'
-    consumer_topics = [
-        'org.fedoraproject.dev.mbs.module.state.change',
-        'org.fedoraproject.stg.mbs.module.state.change',
-    ]
     log_level = 'DEBUG'
     rules_file_url = (
         'https://raw.githubusercontent.com/fedora-modularity/message-tagging-service/'

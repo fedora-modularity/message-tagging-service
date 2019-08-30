@@ -33,26 +33,24 @@ except ImportError:
 
 class TestMessaging(object):
 
-    @patch.object(messaging.conf, 'messaging_backend', new='fedmsg')
-    @patch.dict(messaging.conf.messaging_backends, values={'fedmsg': {
-        'service': 'myapp'
-    }})
-    @patch('fedmsg.publish')
-    def test_send_via_fedmsg(self, publish):
+    @patch.object(messaging.conf, 'messaging_backend', new='fedora-messaging')
+    @patch('fedora_messaging.api.publish')
+    @patch('fedora_messaging.message.Message')
+    def test_send_via_fedora_messaging(self, Message, publish):
         messaging.publish('build.tagged', {'build_id': 1})
 
-        publish.assert_called_once_with(
-            'build.tagged', msg={'build_id': 1}, modname='myapp')
+        Message.assert_called_once_with(topic='build.tagged', body={'build_id': 1})
+
+        outgoing_msg = Message.return_value
+        publish.assert_called_once_with(outgoing_msg)
 
     @pytest.mark.skipif(not rhmsg, reason='Library rhmsg is not available.')
     @patch.object(messaging.conf, 'messaging_backend', new='rhmsg')
-    @patch.dict(messaging.conf.messaging_backends, values={'rhmsg': {
-        'topic_prefix': 'VirtualTopic.eng.mts.',
-        'brokers': ['amqps://broker1/', 'amqps://broker2/'],
-        'certificate': '/path/to/certificate',
-        'private_key': '/path/to/private_key',
-        'ca_cert': '/path/to/ca_cert',
-    }})
+    @patch.object(messaging.conf, 'rhmsg_brokers', new=['amqps://broker1/', 'amqps://broker2/'])
+    @patch.object(messaging.conf, 'rhmsg_certificate', new='/path/to/certificate')
+    @patch.object(messaging.conf, 'rhmsg_private_key', new='/path/to/private_key')
+    @patch.object(messaging.conf, 'rhmsg_ca_cert', new='/path/to/ca_cert')
+    @patch.object(messaging.conf, 'rhmsg_topic_prefix', new='VirtualTopic.eng.mts.')
     @patch('proton.Message')
     @patch('rhmsg.activemq.producer.AMQProducer')
     def test_send_via_rhmsg(self, AMQProducer, Message):

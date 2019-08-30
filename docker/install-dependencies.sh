@@ -6,18 +6,15 @@ rcm_tools_repos=${1:-}
 
 # The URL to RCM Tools Fedora repos
 
-# Pin moksha hub to a known good version until this is fixed:
-#   https://github.com/mokshaproject/moksha/issues/69
 dependencies=(
-    python3-pyyaml
-    python3-moksha-hub-1.5.13-1.fc29
-    python3-fedmsg
-    python3-koji
-    python3-requests
-    python3-qpid-proton
-    python3-gunicorn
+    python3-fedora-messaging
     python3-flask
+    python3-gunicorn
+    python3-koji
+    python3-qpid-proton
     python3-prometheus_client
+    python3-pyyaml
+    python3-requests
 )
 
 if [ -n "$rcm_tools_repos" ]; then
