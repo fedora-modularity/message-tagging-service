@@ -214,18 +214,8 @@ class RuleDef(object):
             # Both scratch and development have default value to compare with
             # expected in rule definition.
 
-            if property == 'scratch':
-                mmd_value = modulemd['data'].get("scratch", False)
-                if expected == mmd_value:
-                    logger.debug('Rule/Value: %s: %s. Matched.', property, expected)
-                    self._property_matches.append(True)
-                else:
-                    logger.debug('Rule/Value: %s: %s. Not Matched. Real value: %s',
-                                 property, expected, mmd_value)
-                    self._property_matches.append(False)
-
-            elif property == 'development':
-                mmd_value = modulemd["data"].get("development", False)
+            if property in ('development', 'scratch'):
+                mmd_value = modulemd["data"].get(property, False)
                 if expected == mmd_value:
                     logger.debug('Rule/Value: %s: %s. Matched.', property, expected)
                     self._property_matches.append(True)
