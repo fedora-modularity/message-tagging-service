@@ -27,14 +27,21 @@ Workflow
 
 This is the service workflow, for example of a module build.
 
-* Listen on message bus (that is fedmsg in Fedora) and waiting for module build
-  state change event. Only ``ready`` state is handled.
-* Service consult to predefined rule definitions to check if that module build
-  matches any rule.
-* If one or more rules are matched, tag the module build with tags defined in
-  matched rules.
+* Listen on message bus, which is `fedora-messaging`_ in Fedora, and waiting
+  for module build state change events.
+
+* Once received a message, MTS checks predefined rule definitions one by one in
+  the order of presence in rule file.
+
+* If the module build matches a rule, apply tags defined in matched rule to
+  this build and its associated ``-devel`` build.
+
 * Send message to message bus to announce a module build is tagged with
-  specific tags.
+  specific tags. Please note that MTS does not actually wait for the tag build
+  task to finish. The message is sent just after ``tagBuild`` returns, which
+  just creates a tag build task and returns immediately.
+  
+.. _fedora-messaging: https://fedora-messaging.readthedocs.io/en/stable/
 
 Rule Definition
 ---------------
@@ -50,25 +57,24 @@ For detailed information on how the rules are matched, please refer to
 Configuration
 -------------
 
-There are two type of configurations.
+Application configuration ``conf/config.py``. Each config is well-documented,
+please refer to this file's content for detailed information. Following three
+config section are defined for different purpose to run MTS.
 
-* ``fedmsg.d/mts.py``: including MTS-specific configs for fedmsg hub. ``mts.py``
-  enables defined consumer and configures to connect UMB accordingly. Refer to
-  section ``Environment Variables`` to learn how to enable stomp protocol to
-  connect other message bus other than the fedmsg.
+* ``BaseConfiguration`` provides default options which could be reused for
+  running in production.
+* ``DevConfiguration`` contains anything for running in development mode.
+* ``TestConfiguration`` contains any config for test purpose.
 
-* ``conf/config.py``: including configs for service.
+Messaging configuration for fedora-messaging included in file ``conf/mts.toml``,
+which includes configs for receiving and sending messages from and to
+fedora-messaging broker in `TOML`_ format. The default config values is defined
+well for interacting with a local RabbitMQ broker, which is good for testing
+locally. For deployment, copy this file and adjust config values for the Fedora
+messaging broker.
 
-  * ``BaseConfiguration`` provides default options which could be reused for
-    running in production.
-  * ``DevConfiguration`` contains anything for running in development mode.
-  * ``TestConfiguration`` contains any config for test purpose.
-
-* Koji login authentication method. It defaults to Kerberos, which is set in
-  default ``koji`` profile. It could be changed to other ``authtype``, for
-  example ``ssl``. Please note that ``cert`` has to be set as well for
-  ``ssl``.
-
+.. _TOML: https://github.com/toml-lang/toml
+  
 Messaging
 ---------
 
@@ -139,32 +145,14 @@ MTS_DEV
 ~~~~~~~
 
 Switch service to run in development mode as long as ``MTS_DEV`` is defined.
+For example, ``export MTS_DEV=1``.
 
-MTS_USE_STOMP
-~~~~~~~~~~~~~
+MTS_CONFIG_FILE
+~~~~~~~~~~~~~~~
 
-Make service run with internal infrastructure. No particular value is required.
-Just define ``MTS_USE_STOMP`` in environment variables.
-
-MTS_STOMP_URI
-~~~~~~~~~~~~~
-
-A comma-separated string of UMB broker URIs. For example::
-
-   'messaging-broker01.dev1.example.com,messaging-broker02.dev2.example.com'
-
-MTS_STOMP_CRT
-~~~~~~~~~~~~~
-
-An absolute path to certificate file.
-
-MTS_STOMP_KEY
-~~~~~~~~~~~~~
-
-An absolute path to private key file.
-
-Both of the certificate file and this private key file are required to connect
-to internal UMB brokers.
+Specify an alternative config file instead of reading the ``conf/config.py``
+when ``MTS_DEV`` is enabled or ``/etc/mts/config.py`` if MTS is installed in
+system. Either an absolute path or relative path works.
 
 Contribution
 ------------
