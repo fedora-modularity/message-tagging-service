@@ -19,16 +19,11 @@ COPY . .
 
 RUN docker/install-dependencies.sh $rcm_tools_repo_file
 
-# Delete the default fedmsg configuration files, and rely on the user supplying
-# the correct configuration as a mounted volume in /etc/fedmsg.d
-RUN rm -rf ./fedmsg.d && rm -rf /etc/fedmsg.d
 RUN sed -i '/koji/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
 # Mount to a directory holding the MTS config file
 VOLUME /etc/mts
-# Mount to a directory holding the fedmsg config file(s)
-VOLUME /etc/fedmsg.d
 USER 1001
 EXPOSE 8080
 ENTRYPOINT ["docker/entrypoint.sh"]
