@@ -80,7 +80,7 @@ def consume(msg):
         try:
             tagging_service.handle(rule_defs, mbs_msg)
         except:  # noqa
-            logger.exception('Failed to handle message f{msg}')
+            logger.exception('Failed to handle message f{mbs_msg}')
             logger.info('Continue to handle next MBS message ...')
 
 
