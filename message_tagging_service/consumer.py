@@ -19,6 +19,7 @@
 #
 # Authors: Chenxiong Qi <cqi@redhat.com>
 
+import json
 import logging
 import requests
 
@@ -29,23 +30,28 @@ from message_tagging_service.utils import read_rule_defs
 logger = logging.getLogger(__name__)
 
 
-class RHMessage(object):
-    """Representing a message received from rhmsg message bus"""
+class UMBMessage(object):
+    """Representing a message received from rhmsg message bus
 
-    def __init__(self, raw_msg):
-        self._raw_msg = raw_msg
+    :param msg: the message object received from underlying rhmsg message bus.
+    :type msg: ``proton.Message``
+    """
+
+    def __init__(self, msg):
+        self._orig_msg = msg
+        self._body = json.loads(msg.body)
 
     @property
     def id(self):
-        return self._raw_msg['msg_id']
+        return self._orig_msg.id
 
     @property
     def topic(self):
-        return self._raw_msg['topic']
+        return self._orig_msg.address
 
     @property
     def body(self):
-        return self._raw_msg['msg']
+        return self._body
 
     def __repr__(self):
         return "{}(id={}, topic={}, body={})".format(
@@ -56,7 +62,9 @@ class RHMessage(object):
 def consume(msg):
     """Do the work to tag build if it matches a rule
 
-    :param dict msg: the message got from message bus.
+    :param msg: the message got from message bus.
+    :type msg: a Message object implementing interfaces to access message body
+        at least.
     """
     try:
         rule_defs = read_rule_defs()
@@ -80,7 +88,7 @@ def consume(msg):
         try:
             tagging_service.handle(rule_defs, mbs_msg)
         except:  # noqa
-            logger.exception('Failed to handle message f{mbs_msg}')
+            logger.exception(f'Failed to handle message {mbs_msg}')
             logger.info('Continue to handle next MBS message ...')
 
 
@@ -100,15 +108,23 @@ def rhmsg_backend():
     """Launch consumer backend based on rhmsg to consume message from UMB"""
     from rhmsg.activemq.consumer import AMQConsumer
 
-    def _consumer_wrapper(msg):
+    def _consumer_wrapper(msg, data=None):
         """Wrap UMB message in a message object
 
         fedora-messaging passes a message object rather than a raw dict into
         consumer function, but rhmsg does pass a dict instead. This wrapper
         makes it easier to handle message in a unified way in function
         ``consume``.
+
+        :param msg: a proton.Message object represeting received message.
+        :param data: any data passed from caller calling ``consumer.consume``.
         """
-        consume(RHMessage(msg))
+        logger.debug('Received message: %r', msg)
+        try:
+            consume(UMBMessage(msg))
+        except json.JSONDecodeError as e:
+            logger.error(f'Cannot decode message body: {msg.body}')
+            logger.error(f'Reason: {str(e)}')
 
     consumer = AMQConsumer(
         urls=conf.rhmsg_brokers,
