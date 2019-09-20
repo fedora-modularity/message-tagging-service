@@ -1,7 +1,8 @@
 FROM registry.fedoraproject.org/fedora:29
 
 LABEL maintainer="Factory 2 Team" \
-      description="A microservice triggered by specific message to tag a build."
+      description="A microservice triggered by specific message to tag a build." \
+      version="latest"
 
 # This is an argument for a URL to a DNF repo file of a repo that contains
 # python3-rhmsg.
