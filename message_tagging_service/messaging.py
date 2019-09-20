@@ -51,10 +51,13 @@ def _fedora_messaging_publish(topic, msg):
     from fedora_messaging import api, message
 
     if conf.dry_run:
-        logger.info('DRY-RUN: send message to fedora-messaging, '
-                    'topic: %s, msg: %s', topic, msg)
+        logger.info(
+            'DRY-RUN: send message to fedora-messaging, topic: %s, msg: %s',
+            topic, msg)
     else:
-        api.publish(message.Message(topic=topic, body=msg))
+        fm_msg = message.Message(topic=topic, body=msg)
+        logger.debug('Send message: %s', fm_msg)
+        api.publish(fm_msg)
 
 
 def _rhmsg_publish(topic, msg):
@@ -83,6 +86,7 @@ def _rhmsg_publish(topic, msg):
             logger.info('DRY-RUN: AMQProducer.send(%s) through topic %s',
                         outgoing_msg, topic)
         else:
+            logger.debug('Send message: %s', outgoing_msg)
             producer.send(outgoing_msg)
 
 

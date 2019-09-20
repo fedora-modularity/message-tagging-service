@@ -86,6 +86,10 @@ def consume(msg):
             '{name}:{stream}:{version}:{context}'.format(**mbs_msg))
     else:
         try:
+            logger.info('Start to handle build: %s:%s:%s:%s',
+                        mbs_msg['name'], mbs_msg['stream'],
+                        mbs_msg['version'], mbs_msg['context'])
+
             tagging_service.handle(rule_defs, mbs_msg)
         except:  # noqa
             logger.exception(f'Failed to handle message {mbs_msg}')

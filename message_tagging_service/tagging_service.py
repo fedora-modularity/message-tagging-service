@@ -352,6 +352,16 @@ def tag_build(nvr, dest_tags, koji_session):
     return tagged_tags
 
 
+def log_failed_tasks(failed_tasks):
+    """Log each failed tasks, each one in a single line
+
+    :param failed_tasks: list of TagBuildResult to represent the failed tasks.
+    :type failed_tasks: list[TagBuildResult]
+    """
+    for task in failed_tasks:
+        logger.warning('Tag %s. Failure reason: %s', task.tag_name, task.error)
+
+
 def handle(rule_defs, event_msg):
     """Handle MBS build.state.change event"""
 
@@ -382,11 +392,7 @@ def handle(rule_defs, event_msg):
     try:
         modulemd = yaml.safe_load(retrieve_modulemd_content(event_msg['id']))
     except requests.exceptions.HTTPError as e:
-        logger.exception(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
-
-        # Continue to wait for and handle next module build which moves
-        # to ready state.
-        return
+        raise RuntimeError(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
 
     logger.debug('Modulemd file is downloaded and parsed.')
 
@@ -432,11 +438,13 @@ def handle(rule_defs, event_msg):
                 logger.warning(
                     'None of tag(s) %r is applied to build %s successfully.',
                     dest_tags, nvr)
+                log_failed_tasks(failed_tasks)
             elif len(failed_tasks) > 0:
                 logger.warning(
-                    'Tag(s) %r should be applied to build %s. But some of them,'
-                    ' %s, failed to be applied.',
-                    nvr, dest_tags, [item[0] for item in failed_tasks])
+                    'Tag(s) %r should be applied to build %s. But failed to '
+                    'apply these tags: %s',
+                    dest_tags, nvr, [item.tag_name for item in failed_tasks])
+                log_failed_tasks(failed_tasks)
 
             # Tag info for message sent later
             # For a successful tag task, it is {"tag": "name", "task_id": 123}
