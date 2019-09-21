@@ -52,8 +52,9 @@ class RuleMatch(object):
         if not match: ...
 
     :param bool matched: indicate if rule definition is matched.
-    :param str dest_tags: the formatted destination tags from rule definition
+    :param dest_tags: the formatted destination tags from rule definition
         item ``destination``.
+    :type dest_tags: list[str]
     """
 
     def __init__(self, matched, dest_tags=None):
