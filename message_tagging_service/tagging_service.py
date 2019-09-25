@@ -343,6 +343,7 @@ def tag_build(nvr, dest_tags, koji_session):
             else:
                 task_id = koji_session.tagBuild(tag, nvr)
         except Exception as e:
+            logger.exception('Failed to tag %s in %s', nvr, tag)
             tagged_tags.append(
                 TagBuildResult(tag_name=tag, task_id=None, error=str(e)))
             monitor.failed_tag_build_requests_counter.inc()
