@@ -47,6 +47,9 @@ class BaseConfiguration:
     # Queue name to receive message from. For example:
     # Consumer.client-mts.queue.VirtualTopic.eng.mbs.module.state.change
     rhmsg_queue = 'Consumer.client-mts.queue.VirtualTopic.eng.mbs.module.state.change'
+    # The name used to identify unique subscriptions. Set this to a unique value
+    # to enable durable messages.
+    rhmsg_subscription_name = None
 
     # Default is INFO. Refer to Python logging module to know valid values.
     log_level = 'INFO'
