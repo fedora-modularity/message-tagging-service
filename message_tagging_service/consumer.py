@@ -132,7 +132,10 @@ def rhmsg_backend():
         private_key=conf.rhmsg_private_key,
         trusted_certificates=conf.rhmsg_ca_cert,
     )
-    consumer.consume(conf.rhmsg_queue, callback=_consumer_wrapper)
+
+    consumer.consume(
+        conf.rhmsg_queue, callback=_consumer_wrapper,
+        subscription_name=conf.rhmsg_subscription_name)
 
 
 def run():
