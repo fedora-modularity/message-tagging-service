@@ -167,6 +167,32 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.6 (2019-09-27)
+~~~~~~~~~~~~~~~~
+
+* Revert "Log the exception when tag failures occur" (Chenxiong Qi)
+* Allow durable queues when using rhmsg (Luiz Carvalho)
+* Fix param type of dest_tags (Chenxiong Qi)
+* Better logs (Chenxiong Qi)
+* Log the exception when tag failures occur (mprahl)
+* Set image version to latest (Chenxiong Qi)
+* Fix consumer and add tests (Chenxiong Qi)
+* Massive updates to README.rst (Chenxiong Qi)
+* Fix variable name inside log message format (Chenxiong Qi)
+* Include mts.toml config in sdist package (Chenxiong Qi)
+* Do not include removed fedmsg.d/ directory (Chenxiong Qi)
+* Remove fedmsg related lines from Dockerfile (Chenxiong Qi)
+* Remove duplicate code handling rule scratch and development (Chenxiong Qi)
+* Migrate to fedora-messaging (Chenxiong Qi)
+* Refactor function is_file_readable (Chenxiong Qi)
+* No need to set koji_cert if not use ssl auth (Chenxiong Qi)
+* Ensure logout koji session if something wrong on session (Chenxiong Qi)
+* Revert "Set USER for fedmsg to publish message" (Chenxiong Qi)
+* Revert "Install packages for Fedora container" (Chenxiong Qi)
+* Set USER for fedmsg to publish message (Chenxiong Qi)
+* Install packages for Fedora container (Chenxiong Qi)
+* Use new pytest.raises argument match (Chenxiong Qi)
+
 0.5 (2019-04-15)
 ~~~~~~~~~~~~~~~~
 
