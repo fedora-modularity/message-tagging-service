@@ -416,6 +416,44 @@ class TestMatchRuleDefinitions(object):
             }),
         ], any_order=True)
 
+    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
+    def test_tag_build_with_complex_destination(self):
+        self.mock_retrieve_modulemd_content.return_value = dedent('''\
+            ---
+            document: modulemd
+            version: 2
+            data:
+              name: virt
+              stream: 8.1
+              version: 1
+              context: c1
+              dependencies:
+              - buildrequires:
+                  platform: [el8.1.1]
+                requires:
+                  platform: [el8]
+            ''')
+
+        session = self.mock_ClientSession.return_value
+        session.tagBuild.side_effect = [1, 2]
+
+        rule_defs = read_rule_defs()
+        tagging_service.handle(rule_defs, {
+            'id': 1,
+            'name': 'virt',
+            'stream': '8.1',
+            'version': '1',
+            'context': 'c1',
+            'state_name': 'ready',
+        })
+
+        nvr = 'virt-8.1-1.c1'
+        nvr_devel = 'virt-devel-8.1-1.c1'
+        session.tagBuild.assert_has_calls([
+            call('advanced-virt-8.1-rhel-8.1.1-modules-gate', nvr),
+            call('advanced-virt-8.1-rhel-8.1.1-modules-gate', nvr_devel),
+        ], any_order=True)
+
     @pytest.mark.parametrize('build_state', ['done', 'build'])
     @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
     def test_match_module_by_build_state_in_rule(self, build_state):
