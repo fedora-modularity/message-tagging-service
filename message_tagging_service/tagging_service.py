@@ -20,6 +20,7 @@
 # Authors: Troy Dawson
 #          Chenxiong Qi <cqi@redhat.com>
 
+import itertools
 import koji
 import koji_cli.lib
 import logging
@@ -79,7 +80,7 @@ class RuleDef(object):
         self.data = data
 
         self._property_matches = []
-        self._regex_has_named_group = []
+        self._regex_group_dicts = []
 
     @property
     def id(self):
@@ -134,8 +135,9 @@ class RuleDef(object):
             match = re.search(regex, value)
             if match:
                 matches_found = True
-                if match.groupdict():
-                    self._regex_has_named_group.append((regex, value))
+                group_dict = match.groupdict()
+                if group_dict:
+                    self._regex_group_dicts.append(group_dict)
 
         return matches_found
 
@@ -259,16 +261,44 @@ class RuleDef(object):
                         self._property_matches.append(False)
 
         if all(self._property_matches):
-            if self._regex_has_named_group:
-                formatted_dest_tags = [
-                    re.sub(regex, self.destinations, mmd_property_value)
-                    for regex, mmd_property_value in self._regex_has_named_group
-                ]
-                return RuleMatch(True, formatted_dest_tags)
+            if self._regex_group_dicts:
+                return RuleMatch(True, self._generate_destination_tags())
             else:
                 return RuleMatch(True, [self.destinations])
         else:
             return RuleMatch(False)
+
+    def _generate_destination_tags(self):
+        # In some cases, the destination tag template uses multiple regex groups, and
+        # the value for these regex groups are extracted from different attributes of
+        # the modulemd info. As such a simple, re.sub of every match will throw an
+        # error because not all regex groups will be resolved. This method adds the
+        # ability to support this use case by generating permutations of each
+        # possible combination and applying each of these permutations to generate
+        # the destination tag name.
+
+        # Aggregate the different values for each regex group.
+        replacements = {}
+        for group_dict in self._regex_group_dicts:
+            for group, value in group_dict.items():
+                replacements.setdefault(group, []).append(value)
+
+        # Split keys and values into lists so the ordering is deterministic.
+        replacement_keys = []
+        replacement_values = []
+        for key, values in replacements.items():
+            replacement_keys.append(key)
+            replacement_values.append(values)
+
+        # Finally, generate destination tag names based permutations of values.
+        destinations = []
+        for values in itertools.product(*replacement_values):
+            dest = self.destinations
+            for group, value in zip(replacement_keys, values):
+                dest = dest.replace(f'\\g<{group}>', value)
+            destinations.append(dest)
+
+        return destinations
 
 
 def login_koji(session, config):

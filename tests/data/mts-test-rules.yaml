@@ -1,3 +1,18 @@
+- id: Advanced Virt 8.x Global rule
+  description: Filter virt:8.x modules to a separate tag
+  type: module
+  rule:
+    name: virt
+    stream: '^(?P<stream>8(?:\.\d)*)$'
+    scratch: no
+    development: no
+    dependencies:
+      buildrequires:
+        platform: '^el(?P<platform>\d+\.\d+\.\d+)(\.z)*$'
+      requires:
+        platform: '^el\d+$'
+  destinations: 'advanced-virt-\g<stream>-rhel-\g<platform>-modules-gate'
+
 - id: Building blocks
   description: Includes building block modules for Fedora.
   type: module
