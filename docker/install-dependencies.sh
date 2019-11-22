@@ -12,6 +12,7 @@ dependencies=(
     python3-gunicorn
     python3-koji
     python3-qpid-proton
+    python3-pip
     python3-prometheus_client
     python3-pyyaml
     python3-requests
