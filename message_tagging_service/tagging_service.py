@@ -26,7 +26,6 @@ import koji_cli.lib
 import logging
 import re
 import requests
-import yaml
 
 from collections import namedtuple
 from contextlib import contextmanager
@@ -34,8 +33,7 @@ from contextlib import contextmanager
 from message_tagging_service import conf
 from message_tagging_service import messaging
 from message_tagging_service import monitor
-from message_tagging_service.utils import is_file_readable
-from message_tagging_service.utils import retrieve_modulemd_content
+from message_tagging_service.utils import is_file_readable, load_module_md
 
 logger = logging.getLogger(__name__)
 
@@ -422,7 +420,7 @@ def handle(rule_defs, event_msg):
         return
 
     try:
-        modulemd = yaml.safe_load(retrieve_modulemd_content(event_msg['id']))
+        modulemd = load_module_md(event_msg['id'])
     except requests.exceptions.HTTPError as e:
         raise RuntimeError(f'Failed to retrieve modulemd for {nsvc}: {str(e)}')
 

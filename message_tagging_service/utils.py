@@ -29,19 +29,26 @@ from message_tagging_service import conf
 logger = logging.getLogger(__name__)
 
 
-def retrieve_modulemd_content(module_build_id):
-    """Retrieve and return modulemd.txt from MBS
+def load_module_md(module_build_id):
+    """Load corresponding module metadata of a specific module build
+
+    For handling the rule match easily, this function also inject some
+    necessary module build properties into the loaded module metadata
+    mapping.
 
     :param int module_build_id: module build ID.
-    :return: modulemd content.
-    :rtype: str
+    :return: a mapping representing the module metadata.
+    :rtype: dict
     """
     api_url = conf.mbs_api_url.rstrip('/')
     resp = requests.get(f'{api_url}/module-builds/{module_build_id}', params={
         'verbose': True
     })
     resp.raise_for_status()
-    return resp.json()['modulemd']
+    module_build = resp.json()
+    modulemd = yaml.safe_load(module_build['modulemd'])
+    modulemd['data']['scratch'] = module_build['scratch']
+    return modulemd
 
 
 def read_rule_defs():

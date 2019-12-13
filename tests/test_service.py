@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import contextlib
 import koji
 import os
 import pytest
@@ -28,12 +27,10 @@ koji_config_krb_auth = {
 }
 
 
-@contextlib.contextmanager
-def mock_get_rule_file(rule_file):
-    with patch('requests.get') as get:
-        with open(rule_file, 'r') as f:
-            get.return_value.text = f.read()
-        yield
+def read_file(filename):
+    """Helper function to read a file in only one line of code"""
+    with open(filename, 'r') as f:
+        return f.read()
 
 
 class TestRuleDefinitionCheck(object):
@@ -144,9 +141,9 @@ class TestMatchRuleDefinitions(object):
                                    return_value=koji_config_krb_auth)
         self.mock_read_config = self.p_read_config.start()
 
-        self.p_retrieve_modulemd_content = patch(
-            'message_tagging_service.tagging_service.retrieve_modulemd_content')
-        self.mock_retrieve_modulemd_content = self.p_retrieve_modulemd_content.start()
+        self.p_http_get = patch('requests.get')
+        self.mock_http_get = self.p_http_get.start()
+        self.mock_get_resp = self.mock_http_get.return_value
 
         self.p_publish = patch('message_tagging_service.messaging.publish')
         self.mock_publish = self.p_publish.start()
@@ -157,29 +154,32 @@ class TestMatchRuleDefinitions(object):
     def teardown_method(self, test_method):
         self.p_ClientSesison.stop()
         self.p_publish.stop()
-        self.p_retrieve_modulemd_content.stop()
+        self.p_http_get.stop()
         self.p_read_config.stop()
 
     @patch('message_tagging_service.tagging_service.tag_build')
-    @mock_get_rule_file(os.path.join(
-        test_data_dir, 'mts-test-for-no-match.yaml'))
     def test_not_tag_build_if_no_rules_are_matched(self, tag_build):
         # Note that, platform does not match the rule in rule file.
-        self.mock_retrieve_modulemd_content.return_value = dedent('''\
-            ---
-            document: modulemd
-            version: 2
-            data:
-              name: ant
-              stream: 1
-              version: 1
-              context: c1
-              dependencies:
-              - buildrequires:
-                  platform: [el8]
-                requires:
-                  platform: [el8]
+        self.mock_get_resp.text = read_file(
+            os.path.join(test_data_dir, 'mts-test-for-no-match.yaml'))
+        self.mock_get_resp.json.return_value = {
+            'scratch': False,
+            'modulemd': dedent('''\
+                ---
+                document: modulemd
+                version: 2
+                data:
+                  name: ant
+                  stream: 1
+                  version: 1
+                  context: c1
+                  dependencies:
+                  - buildrequires:
+                      platform: [el8]
+                    requires:
+                      platform: [el8]
             ''')
+        }
 
         rule_defs = read_rule_defs()
 
@@ -198,25 +198,29 @@ class TestMatchRuleDefinitions(object):
                 info.call_args[0]
             tag_build.assert_not_called()
 
-    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
     def test_tag_build_if_match_one_rule_only(self):
+        self.mock_get_resp.text = read_file(
+            os.path.join(test_data_dir, 'mts-test-rules.yaml'))
 
         # Note that, platform does not match the rule in rule file.
-        self.mock_retrieve_modulemd_content.return_value = dedent('''\
-            ---
-            document: modulemd
-            version: 2
-            data:
-              name: javapackages-tools
-              stream: 1
-              version: 1
-              context: c1
-              dependencies:
-              - buildrequires:
-                  platform: [f29]
-                requires:
-                  platform: [f29]
+        self.mock_get_resp.json.return_value = {
+            'scratch': False,
+            'modulemd': dedent('''\
+                ---
+                document: modulemd
+                version: 2
+                data:
+                  name: javapackages-tools
+                  stream: 1
+                  version: 1
+                  context: c1
+                  dependencies:
+                  - buildrequires:
+                      platform: [f29]
+                    requires:
+                      platform: [f29]
             ''')
+        }
 
         session = self.mock_ClientSession.return_value
         session.tagBuild.side_effect = [1, 2, 3]
@@ -345,32 +349,36 @@ class TestMatchRuleDefinitions(object):
                 ]
             ],
         ])
-    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
     def test_apply_multiple_tags_to_a_matched_build(
             self,
             tagBuild_side_effect,
             expected_destination_tags_for_build,
             expected_destination_tags_for_devel_build
     ):
+        self.mock_get_resp.text = read_file(
+            os.path.join(test_data_dir, 'mts-test-rules.yaml'))
 
         # Because rule file specifies that destination tag uses the value of
         # requires.platform, and there are two of those values in modulemd,
         # the module build should be tagged with two tags.
-        self.mock_retrieve_modulemd_content.return_value = dedent('''\
-            ---
-            document: modulemd
-            version: 2
-            data:
-              name: javapackages-tools
-              stream: 1
-              version: 1
-              context: c1
-              dependencies:
-              - buildrequires:
-                  platform: [f29]
-                requires:
-                  platform: [f29, f28]
+        self.mock_get_resp.json.return_value = {
+            'scratch': False,
+            'modulemd': dedent('''\
+                ---
+                document: modulemd
+                version: 2
+                data:
+                  name: javapackages-tools
+                  stream: 1
+                  version: 1
+                  context: c1
+                  dependencies:
+                  - buildrequires:
+                      platform: [f29]
+                    requires:
+                      platform: [f29, f28]
             ''')
+        }
 
         session = self.mock_ClientSession.return_value
         session.tagBuild.side_effect = tagBuild_side_effect
@@ -416,23 +424,27 @@ class TestMatchRuleDefinitions(object):
             }),
         ], any_order=True)
 
-    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
     def test_tag_build_with_complex_destination(self):
-        self.mock_retrieve_modulemd_content.return_value = dedent('''\
-            ---
-            document: modulemd
-            version: 2
-            data:
-              name: virt
-              stream: 8.1
-              version: 1
-              context: c1
-              dependencies:
-              - buildrequires:
-                  platform: [el8.1.1]
-                requires:
-                  platform: [el8]
+        self.mock_get_resp.text = read_file(
+            os.path.join(test_data_dir, 'mts-test-rules.yaml'))
+        self.mock_get_resp.json.return_value = {
+            'scratch': False,
+            'modulemd': dedent('''\
+                ---
+                document: modulemd
+                version: 2
+                data:
+                  name: virt
+                  stream: 8.1
+                  version: 1
+                  context: c1
+                  dependencies:
+                  - buildrequires:
+                      platform: [el8.1.1]
+                    requires:
+                      platform: [el8]
             ''')
+        }
 
         session = self.mock_ClientSession.return_value
         session.tagBuild.side_effect = [1, 2]
@@ -455,23 +467,27 @@ class TestMatchRuleDefinitions(object):
         ], any_order=True)
 
     @pytest.mark.parametrize('build_state', ['done', 'build'])
-    @mock_get_rule_file(os.path.join(test_data_dir, 'mts-test-rules.yaml'))
     def test_match_module_by_build_state_in_rule(self, build_state):
-        self.mock_retrieve_modulemd_content.return_value = dedent('''\
-            ---
-            document: modulemd
-            version: 2
-            data:
-              name: nodejs
-              stream: 10
-              version: 1
-              context: c1
-              dependencies:
-              - buildrequires:
-                  platform: [f29]
-                requires:
-                  platform: [f29]
+        self.mock_get_resp.text = read_file(
+            os.path.join(test_data_dir, 'mts-test-rules.yaml'))
+        self.mock_get_resp.json.return_value = {
+            'scratch': False,
+            'modulemd': dedent('''\
+                ---
+                document: modulemd
+                version: 2
+                data:
+                  name: nodejs
+                  stream: 10
+                  version: 1
+                  context: c1
+                  dependencies:
+                  - buildrequires:
+                      platform: [f29]
+                    requires:
+                      platform: [f29]
             ''')
+        }
 
         session = self.mock_ClientSession.return_value
         session.tagBuild.side_effect = [1, 2, 3]
