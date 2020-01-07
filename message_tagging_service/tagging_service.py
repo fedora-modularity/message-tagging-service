@@ -217,7 +217,13 @@ class RuleDef(object):
             # Both scratch and development have default value to compare with
             # expected in rule definition.
 
-            if property in ('development', 'scratch'):
+            if property == 'scratch':
+                logger.warning(
+                    'Ignore rule "scratch: %s" which is removed from rule '
+                    'definition specification already.', expected)
+                continue
+
+            if property in ['development']:
                 mmd_value = modulemd["data"].get(property, False)
                 if expected == mmd_value:
                     logger.debug('Rule/Value: %s: %s. Matched.', property, expected)

@@ -50,26 +50,6 @@ class TestRuleDefinitionCheck(object):
         assert match
         assert ['modular-fallback-tag'] == match.dest_tags
 
-    def test_match_scratch_module_build(self):
-        rule_def = {
-            'id': 'Simple match by scratch',
-            'type': 'module',
-            'rule': {'scratch': True},
-            'description': 'Match module build by scratch.',
-            'destinations': 'modular-fallback-tag'
-        }
-
-        modulemd = {'data': {'scratch': True}}
-        match = tagging_service.RuleDef(rule_def).match(modulemd)
-        assert match
-        assert ['modular-fallback-tag'] == match.dest_tags
-
-        modulemd = {'data': {'scratch': False}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
-
-        modulemd = {'data': {}}
-        assert not tagging_service.RuleDef(rule_def).match(modulemd)
-
     def test_match_development_module_build(self):
         rule_def = {
             'id': 'Simple match by development',
