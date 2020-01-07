@@ -182,13 +182,18 @@ class TestConsumer(object):
         # Set any error to make handle function fail
         handle.side_effect = IndexError
 
-        msg = fedora_messaging.api.Message(body={'name': 'modulea'})
+        msg = fedora_messaging.api.Message(body={
+            'name': 'modulea',
+            'stream': '10',
+            'version': '20200107111030',
+            'context': 'c1'
+        })
 
         with patch.object(consumer, 'logger') as logger:
             consumer.consume(msg)
 
             args, _ = logger.exception.call_args
-            assert "Failed to handle message {'name': 'modulea'}" == args[0]
+            assert "Failed to handle message" in args[0]
             args, _ = logger.info.call_args
             assert 'Continue to handle next MBS message ...' == args[0]
 
@@ -212,3 +217,11 @@ class TestConsumer(object):
             assert 'Cannot decode message body: non-JSON message body' == args[0]
             args, _ = logger.error.call_args_list[1]
             assert args[0].startswith('Reason:')
+
+    def test_ignore_scratch_build(self):
+        msg = fedora_messaging.api.Message(body={'name': 'modulea', 'scratch': True})
+
+        with patch.object(consumer, 'logger') as logger:
+            consumer.consume(msg)
+            args, _ = logger.warning.call_args
+            assert 'Ignore scratch build' in args[0]

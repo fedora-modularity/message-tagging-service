@@ -66,11 +66,6 @@ def consume(msg):
     :type msg: a Message object implementing interfaces to access message body
         at least.
     """
-    try:
-        rule_defs = read_rule_defs()
-    except requests.exceptions.HTTPError:
-        logger.exception('Failed to retrieve rules content.')
-        return
 
     mbs_msg = msg.body
     if not mbs_msg:
@@ -78,18 +73,26 @@ def consume(msg):
                      'message %r.', msg)
         return
 
+    if mbs_msg.get('scratch'):
+        logger.warning('Ignore scratch build %s', mbs_msg)
+        return
+
+    try:
+        rule_defs = read_rule_defs()
+    except requests.exceptions.HTTPError:
+        logger.exception('Failed to retrieve rules content.')
+        return
+
+    nsvc = '{name}:{stream}:{version}:{context}'.format(**mbs_msg)
+
     # For an empty yaml file, YAML returns None. So, if the remote rule
     # file is empty, catch this case and skip to handle the tag.
     if rule_defs is None:
         logger.warning(
-            'Ignore module build %s as no rule is defined in rule file.',
-            '{name}:{stream}:{version}:{context}'.format(**mbs_msg))
+            'Ignore module build %s as no rule is defined in rule file.', nsvc)
     else:
         try:
-            logger.info('Start to handle build: %s:%s:%s:%s',
-                        mbs_msg['name'], mbs_msg['stream'],
-                        mbs_msg['version'], mbs_msg['context'])
-
+            logger.info('Start to handle build: %s', nsvc)
             tagging_service.handle(rule_defs, mbs_msg)
         except:  # noqa
             logger.exception(f'Failed to handle message {mbs_msg}')
