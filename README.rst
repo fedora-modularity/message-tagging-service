@@ -167,6 +167,15 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.7 (2020-02-07)
+~~~~~~~~~~~~~~~~
+
+* Upgrade base image to Fedora 30
+* Do not attempt to tag a scratch build (Chenxiong Qi)
+* Do not handle scratch from rule (Chenxiong Qi)
+* Add support for complex destinations (Luiz Carvalho)
+* Run mts in the foreground (Luiz Carvalho)
+
 0.6 (2019-09-27)
 ~~~~~~~~~~~~~~~~
 
