@@ -62,6 +62,10 @@ class BaseConfiguration:
     # tagged if no build state is specified in rule explicitly.
     build_state = 'ready'
 
+    # Default build state filter for the messages sent by MBS. This happens
+    # before any rules applied. Default: ['ready', 'done']
+    build_state_msg_filter = ['ready', 'done']
+
 
 class DevConfiguration(BaseConfiguration):
     koji_profile = 'stg'
