@@ -15,7 +15,7 @@ jobs:
       docker run --rm -v $(pwd):/code:Z -i -t registry.fedoraproject.org/fedora:31 /bin/bash -c "
       dnf install -y python36 python3-devel gcc redhat-rpm-config rpm-devel krb5-devel
       python3 -m venv /root/testenv
-      source /root/testenv
+      source /root/testenv/bin/activate
       cd /code
       python3 -m pip install tox
       python3 -m tox
