@@ -16,7 +16,7 @@ from message_tagging_service.utils import read_rule_defs
 test_data_dir = os.path.join(os.path.dirname(__file__), 'data')
 
 
-# Fake koji config returned from koji.read_config that ensures krb_login is
+# Fake koji config returned from koji.read_config that ensures gssapi_login is
 # called successfully.
 koji_config_krb_auth = {
     'authtype': 'kerberos',
@@ -518,7 +518,7 @@ class TestLoginKoji(object):
             with patch.object(tagging_service.conf, 'principal', new=principal):
                 tagging_service.login_koji(session, koji_config_krb_auth)
 
-        session.krb_login.assert_called_once_with(**krb_login_kwargs)
+        session.gssapi_login.assert_called_once_with(**krb_login_kwargs)
 
     @patch.object(tagging_service.conf, 'koji_cert', new='path/to/cert')
     def test_raise_error_if_ssl_cert_is_not_readable(self):
