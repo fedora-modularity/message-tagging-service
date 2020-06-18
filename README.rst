@@ -40,7 +40,7 @@ This is the service workflow, for example of a module build.
   specific tags. Please note that MTS does not actually wait for the tag build
   task to finish. The message is sent just after ``tagBuild`` returns, which
   just creates a tag build task and returns immediately.
-  
+
 .. _fedora-messaging: https://fedora-messaging.readthedocs.io/en/stable/
 
 Rule Definition
@@ -74,7 +74,7 @@ locally. For deployment, copy this file and adjust config values for the Fedora
 messaging broker.
 
 .. _TOML: https://github.com/toml-lang/toml
-  
+
 Messaging
 ---------
 
@@ -166,6 +166,14 @@ covered by tests. Run tests::
 
 Change Logs
 -----------
+
+0.8 (2020-06-18)
+~~~~~~~~~~~~~~~~
+
+* Only receive msgs with build_state is ready or done by default (Yu Ming Zhu)
+* Unittest: the latest koji use gssapi_login instead of krb_login (Yu Ming Zhu)
+* CI: Fix missing command to run tests (Chenxiong Qi)
+* Use image fedora:31 in CI (Chenxiong Qi)
 
 0.7 (2020-02-07)
 ~~~~~~~~~~~~~~~~
