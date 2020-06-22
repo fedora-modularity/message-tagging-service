@@ -125,7 +125,7 @@ class TestConsumer(object):
         'stream': '2.7',
         'version': '1',
         'context': 'c1',
-        'build_state': 'ready',
+        'state_name': 'ready',
     }, {}])
     @patch('message_tagging_service.consumer.tagging_service.handle')
     @patch('requests.get')
@@ -188,7 +188,7 @@ class TestConsumer(object):
             'stream': '10',
             'version': '20200107111030',
             'context': 'c1',
-            'build_state': 'ready',
+            'state_name': 'ready',
         })
 
         with patch.object(consumer, 'logger') as logger:
@@ -230,7 +230,7 @@ class TestConsumer(object):
 
     def test_ignore_filtered_out_by_states(self):
         msg = fedora_messaging.api.Message(body={'name': 'modulea',
-                                                 'build_state': 'init'})
+                                                 'state_name': 'init'})
 
         with patch.object(consumer, 'logger') as logger:
             consumer.consume(msg)

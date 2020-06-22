@@ -77,7 +77,7 @@ def consume(msg):
         logger.warning('Ignore scratch build %s', mbs_msg)
         return
 
-    build_state = mbs_msg.get('build_state')
+    build_state = mbs_msg.get('state_name')
     if build_state not in conf.build_state_msg_filter:
         logger.warning('The message with build_state: %s is ignored.', build_state)
         return
