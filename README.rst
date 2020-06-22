@@ -167,6 +167,11 @@ covered by tests. Run tests::
 Change Logs
 -----------
 
+0.8.1 (2020-06-22)
+~~~~~~~~~~~~~~~~~~
+
+* Fix the field from build_state to state_name for state filter (Yu Ming Zhu)
+
 0.8 (2020-06-18)
 ~~~~~~~~~~~~~~~~
 
