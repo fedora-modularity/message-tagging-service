@@ -10,9 +10,6 @@ Message Tagging Service
 .. image:: https://img.shields.io/pypi/l/message-tagging-service.svg?colorB=green
    :target: https://pypi.org/project/message-tagging-service/
 
-.. image:: https://travis-ci.org/fedora-modularity/message-tagging-service.svg?branch=master
-   :target: https://travis-ci.org/fedora-modularity/message-tagging-service
-
 .. image:: https://quay.io/repository/factory2/message-tagging-service/status
    :target: https://quay.io/repository/factory2/message-tagging-service/status
 
