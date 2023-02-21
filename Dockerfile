@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:30
+FROM registry.fedoraproject.org/fedora:37
 
 LABEL maintainer="Factory 2 Team" \
       description="A microservice triggered by specific message to tag a build." \
