@@ -16,6 +16,7 @@ dependencies=(
     python3-prometheus_client
     python3-pyyaml
     python3-requests
+    krb5-workstation
 )
 
 if [ -n "$rcm_tools_repos" ]; then
