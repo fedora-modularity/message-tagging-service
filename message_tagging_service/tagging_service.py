@@ -132,7 +132,12 @@ class RuleDef(object):
 
         matches_found = False
         for value in check_values:
-            match = re.search(regex, value)
+            # when regex is not str, we use "eq", otherwise use regex
+            if not isinstance(regex, str):
+                if regex == value:
+                    return True
+                continue
+            match = re.search(regex, str(value))
             if match:
                 matches_found = True
                 group_dict = match.groupdict()
@@ -241,12 +246,16 @@ class RuleDef(object):
                     self._property_matches.append(False)
 
                 elif isinstance(expected, dict):
-                    if self.find_diff_dict(expected, value_to_check[0]):
+                    if isinstance(value_to_check, list):
+                        v = value_to_check[0]
+                    else:
+                        v = value_to_check
+                    if self.find_diff_dict(expected, v):
                         logger.debug('Rule/Value: %s: %r. Matched.', property, expected)
                         self._property_matches.append(True)
                     else:
                         logger.debug('Rule/Value: %s: %r. Not Matched. Real value: %r',
-                                     property, expected, value_to_check[0])
+                                     property, expected, v)
                         self._property_matches.append(False)
 
                 elif isinstance(expected, list):

@@ -92,7 +92,7 @@ class TestRuleDefinitionCheck(object):
         modulemd = {'data': {'name': 'module-b'}}
         assert not tagging_service.RuleDef(rule_def).match(modulemd)
 
-    def test_match_module_by_dict_type_rule(self):
+    def test_match_module_by_list_in_dict_type_rule(self):
         rule_def = {
             'id': 'Match module by name',
             'type': 'module',
@@ -111,6 +111,40 @@ class TestRuleDefinitionCheck(object):
                 'buildrequires': {'platform': ['f28']},
                 'requires': {'platform': ['f28']},
             }]
+        }}
+        match = tagging_service.RuleDef(rule_def).match(modulemd)
+        assert match
+        assert ['f28-modular-ursamajor'] == match.dest_tags
+
+    @pytest.mark.parametrize('rule_def', [
+            {
+                'id': 'Match module by name',
+                'type': 'module',
+                'rule': {
+                    'xmd': {
+                        'nocompose': True
+                    }
+                },
+                'description': 'Match module build by xmd.nocompose.',
+                'destinations': r'f28-modular-ursamajor',
+            },
+            {
+                'id': 'Match module by name',
+                'type': 'module',
+                'rule': {
+                    'xmd': {
+                        'nocompose': '(?i)true'
+                    }
+                },
+                'description': 'Match module build by xmd.nocompose.',
+                'destinations': r'f28-modular-ursamajor',
+            }
+        ])
+    def test_match_module_by_nested_dict_type_rule(self, rule_def):
+        modulemd = {'data': {
+            'xmd': {
+                'nocompose': True
+            }
         }}
         match = tagging_service.RuleDef(rule_def).match(modulemd)
         assert match
@@ -486,11 +520,17 @@ class TestLoginKoji(object):
     @patch('os.access', return_value=True)
     def test_ssl_login(self, access, exists):
         session = Mock()
+        session.logged_in = False
+
+        def ssl_login_mock(*args, **kwargs):
+            session.logged_in = True
+
+        session.ssl_login.side_effect = ssl_login_mock
         # Ensure koji_cli.lib.activate_session completes API version check.
         session.getAPIVersion.return_value = 1
 
         tagging_service.login_koji(session, {
-            'authtype': 'kerberos',
+            'authtype': 'ssl',
             'serverca': '',
             'debug': False,
         })
@@ -512,6 +552,12 @@ class TestLoginKoji(object):
     @patch('os.access', return_value=True)
     def test_krb_login(self, access, exists, keytab, principal, krb_login_kwargs):
         session = Mock()
+        session.logged_in = False
+
+        def gssapi_login_mock(*args, **kwargs):
+            session.logged_in = True
+
+        session.gssapi_login.side_effect = gssapi_login_mock
         session.getAPIVersion.return_value = 1
 
         with patch.object(tagging_service.conf, 'keytab', new=keytab):
