@@ -1,0 +1,9 @@
+Flask
+PyYAML
+koji
+psutil
+python-qpid-proton
+requests
+prometheus_client
+fedora-messaging
+# rhmsg is not available in PyPI so far.
