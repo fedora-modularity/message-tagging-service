@@ -43,6 +43,7 @@ class TestRetrieveModulemdContent(object):
         assert fake_modulemd == modulemd
         get.assert_called_once_with(
             'https://mbs.local/module-builds/1',
+            timeout=60,
             params={'verbose': True})
 
     @patch.object(utils.conf, 'mbs_api_url', new='https://mbs.local/')

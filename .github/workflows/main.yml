@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+      - "*"
+  push:
+    branches:
+      - "*"
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - uses: fedora-python/tox-github-action@v37.0
+        with:
+          tox_env: flake8
+          dnf_install: krb5-devel
+      - uses: fedora-python/tox-github-action@v37.0
+        with:
+          tox_env: safety
+          dnf_install: krb5-devel
+      - uses: fedora-python/tox-github-action@v37.0
+        with:
+          tox_env: bandit
+          dnf_install: krb5-devel
+
+  testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - uses: fedora-python/tox-github-action@v37.0
+        with:
+          tox_env: py39
+          dnf_install: krb5-devel
