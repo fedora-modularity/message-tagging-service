@@ -66,6 +66,9 @@ class BaseConfiguration:
     # before any rules applied. Default: ['ready', 'done']
     build_state_msg_filter = ['ready', 'done']
 
+    # Default timeout of outgoing connection by python-requests
+    requests_timeout = 60
+
 
 class DevConfiguration(BaseConfiguration):
     koji_profile = 'stg'

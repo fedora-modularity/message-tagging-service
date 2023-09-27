@@ -37,9 +37,10 @@ def retrieve_modulemd_content(module_build_id):
     :rtype: str
     """
     api_url = conf.mbs_api_url.rstrip('/')
-    resp = requests.get(f'{api_url}/module-builds/{module_build_id}', params={
-        'verbose': True
-    })
+    resp = requests.get(f'{api_url}/module-builds/{module_build_id}',
+                        timeout=conf.requests_timeout,
+                        params={'verbose': True}
+                        )
     resp.raise_for_status()
     return resp.json()['modulemd']
 
@@ -51,7 +52,7 @@ def read_rule_defs():
         a mapping.
     :rtype: dict
     """
-    r = requests.get(conf.rules_file_url)
+    r = requests.get(conf.rules_file_url, timeout=conf.requests_timeout)
     r.raise_for_status()
     return yaml.safe_load(r.text)
 

@@ -41,7 +41,8 @@ class Config:
         (but only for this particular instance)
     """
     _defaults = {
-        'build_state_msg_filter': ['ready', 'done']
+        'build_state_msg_filter': ['ready', 'done'],
+        'requests_timeout': 60
     }
 
     def __init__(self, profile=None, config_file=None, config_class=None):
