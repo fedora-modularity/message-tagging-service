@@ -6,4 +6,5 @@ python-qpid-proton
 requests
 prometheus_client
 fedora-messaging
+urllib3>=2.0.6
 # rhmsg is not available in PyPI so far.
