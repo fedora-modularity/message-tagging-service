@@ -261,10 +261,6 @@ idna==3.4 \
     # via
     #   hyperlink
     #   requests
-importlib-metadata==3.6.0 \
-    --hash=sha256:080d666daa2faedcc2e96c0c87d3cdb76325261c51650016784834733faa7897 \
-    --hash=sha256:144acbe6ec34f170c4a362f52c2d03e82db7d012668ba57ff8f1e668905889b0
-    # via flask
 incremental==22.10.0 \
     --hash=sha256:912feeb5e0f7e0188e6f42241d2f450002e11bbc0937c65865045854c24c0bd0 \
     --hash=sha256:b864a1f30885ee72c5ac2835a761b8fe8aa9c28b9395cacf27286602688d3e51
@@ -589,10 +585,6 @@ six==1.16.0 \
     #   automat
     #   koji
     #   python-dateutil
-tomli==2.0.1 \
-    --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
-    --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via fedora-messaging
 twisted==23.8.0 \
     --hash=sha256:3c73360add17336a622c0d811c2a2ce29866b6e59b1125fd6509b17252098a24 \
     --hash=sha256:b8bdba145de120ffb36c20e6e071cce984e89fba798611ed0704216fb7f884cd
@@ -609,9 +601,9 @@ urllib3==2.0.6 \
     # via
     #   -r requirements.in
     #   requests
-werkzeug==2.3.7 \
-    --hash=sha256:2b8c0e447b4b9dbcc85dd97b6eeb4dcbaf6c8b6c3be0bd654e25553e0a2157d8 \
-    --hash=sha256:effc12dba7f3bd72e605ce49807bbe692bd729c3bb122a3b91747a6ae77df528
+werkzeug==3.0.1 \
+    --hash=sha256:507e811ecea72b18a404947aded4b3390e1db8f826b494d76550ef45bb3b1dcc \
+    --hash=sha256:90a285dc0e42ad56b34e696398b8122ee4c681833fb35b8334a095d82c56da10
     # via flask
 wrapt==1.15.0 \
     --hash=sha256:02fce1852f755f44f95af51f69d22e45080102e9d00258053b79367d07af39c0 \
@@ -690,10 +682,6 @@ wrapt==1.15.0 \
     --hash=sha256:fbec11614dba0424ca72f4e8ba3c420dba07b4a7c206c8c8e4e73f2e98f4c559 \
     --hash=sha256:fd69666217b62fa5d7c6aa88e507493a34dec4fa20c5bd925e4bc12fce586639
     # via crochet
-zipp==3.17.0 \
-    --hash=sha256:0e923e726174922dce09c53c59ad483ff7bbb8e572e00c7f7c46b88556409f31 \
-    --hash=sha256:84e64a1c28cf7e91ed2078bb8cc8c259cb19b76942096c8d7b84947690cabaf0
-    # via importlib-metadata
 zope-interface==5.5.2 \
     --hash=sha256:008b0b65c05993bb08912f644d140530e775cf1c62a072bf9340c2249e613c32 \
     --hash=sha256:0217a9615531c83aeedb12e126611b1b1a3175013bbafe57c702ce40000eb9a0 \
