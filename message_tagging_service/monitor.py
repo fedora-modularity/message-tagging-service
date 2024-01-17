@@ -27,7 +27,6 @@ import os
 import tempfile
 
 from prometheus_client import CollectorRegistry
-from prometheus_client import ProcessCollector
 from prometheus_client import multiprocess
 from prometheus_client import Counter
 from prometheus_client import generate_latest
@@ -37,7 +36,6 @@ if not os.environ.get('prometheus_multiproc_dir'):
     os.environ.setdefault('prometheus_multiproc_dir', dir_name)
 
 registry = CollectorRegistry()
-ProcessCollector(registry=registry)
 multiprocess.MultiProcessCollector(registry)
 
 failed_tag_build_requests_counter = Counter(
