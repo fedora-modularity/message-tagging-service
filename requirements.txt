@@ -596,10 +596,11 @@ tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
     # via fedora-messaging
-twisted==23.8.0 \
-    --hash=sha256:3c73360add17336a622c0d811c2a2ce29866b6e59b1125fd6509b17252098a24 \
-    --hash=sha256:b8bdba145de120ffb36c20e6e071cce984e89fba798611ed0704216fb7f884cd
+twisted==23.10.0 \
+    --hash=sha256:4ae8bce12999a35f7fe6443e7f1893e6fe09588c8d2bed9c35cdce8ff2d5b444 \
+    --hash=sha256:987847a0790a2c597197613686e2784fd54167df3a55d0fb17c8412305d76ce5
     # via
+    #   -r requirements.in
     #   crochet
     #   fedora-messaging
 typing-extensions==4.8.0 \

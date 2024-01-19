@@ -752,9 +752,9 @@ tomli==2.0.1 \
     #   coverage
     #   fedora-messaging
     #   pytest
-twisted==23.8.0 \
-    --hash=sha256:3c73360add17336a622c0d811c2a2ce29866b6e59b1125fd6509b17252098a24 \
-    --hash=sha256:b8bdba145de120ffb36c20e6e071cce984e89fba798611ed0704216fb7f884cd
+twisted==23.10.0 \
+    --hash=sha256:4ae8bce12999a35f7fe6443e7f1893e6fe09588c8d2bed9c35cdce8ff2d5b444 \
+    --hash=sha256:987847a0790a2c597197613686e2784fd54167df3a55d0fb17c8412305d76ce5
     # via
     #   -r requirements.txt
     #   crochet
