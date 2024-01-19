@@ -20,7 +20,7 @@ COPY . .
 
 RUN docker/install-dependencies.sh $rcm_tools_repo_file
 
-RUN sed -i '/koji/d' requirements.txt
+RUN sed -i '/^koji==/,/--hash=\S*$/d' requirements.txt
 RUN python3 -m pip install --no-deps .
 
 # Mount to a directory holding the MTS config file
