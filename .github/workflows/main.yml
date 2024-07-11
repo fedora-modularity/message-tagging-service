@@ -21,15 +21,15 @@ jobs:
       - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: flake8
-          dnf_install: krb5-devel
+          dnf_install: gcc krb5-devel
       - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: safety
-          dnf_install: krb5-devel
+          dnf_install: gcc krb5-devel
       - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: bandit
-          dnf_install: krb5-devel
+          dnf_install: gcc krb5-devel
 
   testing:
     runs-on: ubuntu-latest
