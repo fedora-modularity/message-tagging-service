@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:38
+FROM registry.fedoraproject.org/fedora:39
 
 LABEL maintainer="Factory 2 Team" \
       description="A microservice triggered by specific message to tag a build." \
@@ -21,6 +21,7 @@ COPY . .
 RUN docker/install-dependencies.sh $rcm_tools_repo_file
 
 RUN sed -i '/^koji==/,/--hash=\S*$/d' requirements.txt
+RUN sed -i '/^koji==.*$/d' requirements-no-hashes.txt
 RUN python3 -m pip install --no-deps .
 
 # Mount to a directory holding the MTS config file

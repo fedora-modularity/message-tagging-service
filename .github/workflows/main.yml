@@ -18,15 +18,15 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
-      - uses: fedora-python/tox-github-action@v38.0
+      - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: flake8
           dnf_install: krb5-devel
-      - uses: fedora-python/tox-github-action@v38.0
+      - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: safety
           dnf_install: krb5-devel
-      - uses: fedora-python/tox-github-action@v38.0
+      - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: bandit
           dnf_install: krb5-devel
@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
-      - uses: fedora-python/tox-github-action@v38.0
+      - uses: fedora-python/tox-github-action@v39.0
         with:
           tox_env: py39
           dnf_install: krb5-devel

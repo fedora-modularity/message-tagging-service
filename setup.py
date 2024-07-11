@@ -7,9 +7,9 @@ with open('README.rst', 'r') as f:
     long_description = f.read()
 
 
-with open('requirements.txt', 'r') as f:
+with open('requirements-no-hashes.txt', 'r') as f:
     install_requires = [
-        line.rstrip() for line in f if not line.startswith('#')
+        line.strip() for line in f if not line.lstrip().startswith('#')
     ]
 
 
