@@ -1,6 +1,9 @@
 -r requirements.txt
 
+bandit
 flake8
 mock
+pip-tools
 pytest
 pytest-cov
+safety
