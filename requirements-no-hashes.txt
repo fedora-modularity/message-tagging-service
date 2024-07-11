@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements-no-hashes.txt
 #
-attrs==23.1.0
+attrs==23.2.0
     # via
     #   automat
     #   jsonschema
@@ -13,105 +13,106 @@ attrs==23.1.0
     #   twisted
 automat==22.10.0
     # via twisted
-blinker==1.6.2
+blinker==1.8.2
     # via
     #   fedora-messaging
     #   flask
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
-cffi==1.15.1
+cffi==1.16.0
     # via
     #   cryptography
     #   python-qpid-proton
-charset-normalizer==3.2.0
+charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
     #   fedora-messaging
     #   flask
-constantly==15.1.0
+constantly==23.10.4
     # via twisted
 crochet==2.1.1
     # via fedora-messaging
-cryptography==41.0.7
+cryptography==42.0.8
     # via
     #   -r requirements.in
     #   pyopenssl
     #   service-identity
 decorator==5.1.1
     # via gssapi
-fedora-messaging==3.4.1
+defusedxml==0.7.1
+    # via koji
+fedora-messaging==3.6.0
     # via -r requirements.in
-flask==2.3.3
+flask==3.0.3
     # via -r requirements.in
 gssapi==1.8.3
     # via requests-gssapi
 hyperlink==21.0.0
     # via twisted
-idna==3.4
+idna==3.7
     # via
     #   hyperlink
     #   requests
-importlib-metadata==3.6.0
+importlib-metadata==8.0.0
     # via flask
 incremental==22.10.0
     # via twisted
-itsdangerous==2.1.2
+itsdangerous==2.2.0
     # via flask
-jinja2==3.1.3
+jinja2==3.1.4
     # via
     #   -r requirements.in
     #   flask
-jsonschema==4.19.1
+jsonschema==4.23.0
     # via fedora-messaging
-jsonschema-specifications==2023.7.1
+jsonschema-specifications==2023.12.1
     # via jsonschema
-koji==1.33.1
+koji==1.34.2
     # via -r requirements.in
-markupsafe==2.1.3
+markupsafe==2.1.5
     # via
     #   jinja2
     #   werkzeug
 pika==1.3.2
     # via fedora-messaging
-prometheus-client==0.17.1
+prometheus-client==0.20.0
     # via -r requirements.in
-psutil==5.9.5
+psutil==6.0.0
     # via -r requirements.in
-pyasn1==0.5.0
+pyasn1==0.6.0
     # via
     #   pyasn1-modules
     #   service-identity
-pyasn1-modules==0.3.0
+pyasn1-modules==0.4.0
     # via service-identity
-pycparser==2.21
+pycparser==2.22
     # via cffi
-pyopenssl==23.2.0
+pyopenssl==24.1.0
     # via fedora-messaging
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via koji
 python-qpid-proton==0.39.0
     # via -r requirements.in
-pytz==2023.3.post1
-    # via fedora-messaging
 pyyaml==6.0.1
     # via -r requirements.in
-referencing==0.30.2
+referencing==0.35.1
     # via
     #   jsonschema
     #   jsonschema-specifications
-requests==2.31.0
+requests==2.32.3
     # via
     #   -r requirements.in
+    #   fedora-messaging
     #   koji
     #   requests-gssapi
-requests-gssapi==1.2.3
+requests-gssapi==1.3.0
     # via koji
-rpds-py==0.10.3
+rpds-py==0.19.0
     # via
     #   jsonschema
     #   referencing
-service-identity==23.1.0
+service-identity==24.1.0
     # via fedora-messaging
 six==1.16.0
     # via
@@ -120,26 +121,26 @@ six==1.16.0
     #   python-dateutil
 tomli==2.0.1
     # via fedora-messaging
-twisted==23.10.0
+twisted==24.3.0
     # via
     #   -r requirements.in
     #   crochet
     #   fedora-messaging
-typing-extensions==4.8.0
+typing-extensions==4.12.2
     # via twisted
-urllib3==2.1.0
+urllib3==2.2.2
     # via
     #   -r requirements.in
     #   requests
-werkzeug==3.0.1
+werkzeug==3.0.3
     # via
     #   -r requirements.in
     #   flask
-wrapt==1.15.0
+wrapt==1.16.0
     # via crochet
-zipp==3.17.0
+zipp==3.19.2
     # via importlib-metadata
-zope-interface==5.5.2
+zope-interface==6.4.post2
     # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
