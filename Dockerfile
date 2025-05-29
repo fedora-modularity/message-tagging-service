@@ -7,7 +7,7 @@ LABEL maintainer="Factory 2 Team" \
 # This is an argument for a URL to a DNF repo file of a repo that contains
 # python3-rhmsg.
 # This argument could be omitted when build image for Fedora.
-ARG rcm_tools_repo_file=https://download.devel.redhat.com/rel-eng/RCMTOOLS/rcm-tools-fedora.repo
+ARG rcm_tools_repo_file
 
 RUN sed -i '/default_ccache_name = KEYRING:persistent:%{uid}/d' /etc/krb5.conf
 
