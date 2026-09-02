@@ -121,7 +121,7 @@ def kafka_client_config():
 
 
 def _kafka_publish(topic, msg):
-    """Send message to the IT Managed Kafka service
+    """Send message to the Kafka service
 
     :param str topic: the topic where message will be sent to, e.g.
         ``build.tagged``. The configured ``kafka_topic_prefix`` is prepended to

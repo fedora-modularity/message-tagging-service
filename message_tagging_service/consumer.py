@@ -60,7 +60,7 @@ class UMBMessage(object):
 
 
 class KafkaMessage(object):
-    """Representing a message consumed from the IT Managed Kafka service
+    """Representing a message consumed from Kafka service
 
     :param msg: the record consumed from Kafka.
     :type msg: ``kafka.consumer.fetcher.ConsumerRecord``

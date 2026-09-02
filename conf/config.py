@@ -51,17 +51,10 @@ class BaseConfiguration:
     # to enable durable messages.
     rhmsg_subscription_name = None
 
-    # Set messaging_backend to 'kafka' to interact with the IT Managed Kafka
-    # service instead of UMB. During the UMB->Kafka migration the relevant
-    # topics are kept in sync by the Messaging Bridge, so the kafka and rhmsg
-    # backends can be switched independently for producing and consuming.
-
     # Kafka bootstrap servers to connect to, e.g.
     # ['kafka-broker1:9092', 'kafka-broker2:9092']
     kafka_bootstrap_servers = []
-    # Kafka topic MTS consumes MBS module state change events from. During the
-    # UMB->Kafka migration this topic is kept in sync with the equivalent UMB
-    # VirtualTopic by the Messaging Bridge.
+    # Kafka topic MTS consumes MBS module state change events from. 
     kafka_consumer_topic = 'VirtualTopic.eng.mbs.module.state.change'
     # Consumer group id. Kafka tracks committed offsets per consumer group, so
     # keep this stable to avoid reprocessing messages across restarts.
@@ -76,7 +69,7 @@ class BaseConfiguration:
     kafka_send_timeout = 30
 
     # Connection security for Kafka. One of: PLAINTEXT, SSL, SASL_PLAINTEXT,
-    # SASL_SSL. IT Managed Kafka typically uses SASL_SSL.
+    # SASL_SSL.
     kafka_security_protocol = 'SASL_SSL'
     # SASL mechanism, e.g. SCRAM-SHA-512, PLAIN or OAUTHBEARER. Leave empty when
     # not using SASL.

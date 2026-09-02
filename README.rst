@@ -82,20 +82,8 @@ config value:
   ``conf/mts.toml``.
 * ``rhmsg`` -- Red Hat Unified Message Bus (UMB), configured via the
   ``rhmsg_*`` config values.
-* ``kafka`` -- the IT Managed Kafka service, configured via the ``kafka_*``
+* ``kafka`` -- Kafka service, configured via the ``kafka_*``
   config values.
-
-The ``kafka`` backend uses the `kafka-python`_ client. During the migration
-from UMB to Kafka the relevant topics are synchronized bi-directionally by the
-Messaging Bridge, so the producer and consumer can be moved from ``rhmsg`` to
-``kafka`` independently without disrupting services still on UMB. The consumer
-disables auto-commit and commits offsets only after a message is processed,
-giving an at-least-once delivery guarantee. Set ``kafka_bootstrap_servers``,
-the topic/group values, and the ``kafka_security_protocol`` /
-``kafka_sasl_*`` / ``kafka_ssl_*`` auth values to match your IT Managed Kafka
-account. Refer to ``conf/config.py`` for the full list of options.
-
-.. _kafka-python: https://kafka-python.readthedocs.io/
 
 Messaging
 ---------
