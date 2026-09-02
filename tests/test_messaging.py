@@ -23,7 +23,7 @@ import json
 import pytest
 
 from message_tagging_service import messaging
-from mock import patch
+from mock import patch, Mock
 
 try:
     import rhmsg
@@ -69,6 +69,57 @@ class TestMessaging(object):
 
         Message.return_value.body = json.dumps(msg)
         producer.send.assert_called_once_with(Message.return_value)
+
+    @patch.object(messaging.conf, 'messaging_backend', new='kafka')
+    @patch.object(messaging.conf, 'dry_run', new=False)
+    @patch.object(messaging.conf, 'kafka_bootstrap_servers',
+                  new=['broker1:9092', 'broker2:9092'])
+    @patch.object(messaging.conf, 'kafka_security_protocol', new='SASL_SSL')
+    @patch.object(messaging.conf, 'kafka_sasl_mechanism', new='SCRAM-SHA-512')
+    @patch.object(messaging.conf, 'kafka_sasl_username', new='mts')
+    @patch.object(messaging.conf, 'kafka_sasl_password', new='secret')
+    @patch.object(messaging.conf, 'kafka_ssl_cafile', new='/path/to/ca_cert')
+    @patch.object(messaging.conf, 'kafka_ssl_certfile', new='')
+    @patch.object(messaging.conf, 'kafka_ssl_keyfile', new='')
+    @patch.object(messaging.conf, 'kafka_topic_prefix', new='VirtualTopic.eng.mts')
+    @patch.object(messaging.conf, 'kafka_send_timeout', new=30)
+    def test_send_via_kafka(self):
+        fake_kafka = Mock()
+        msg = {'koji_tag': 'module-a-1-1-c1'}
+
+        with patch.dict('sys.modules', {'kafka': fake_kafka}):
+            messaging.publish('build.tagged', msg)
+
+        KafkaProducer = fake_kafka.KafkaProducer
+        KafkaProducer.assert_called_once()
+        _, kwargs = KafkaProducer.call_args
+        assert kwargs['bootstrap_servers'] == ['broker1:9092', 'broker2:9092']
+        assert kwargs['security_protocol'] == 'SASL_SSL'
+        assert kwargs['sasl_mechanism'] == 'SCRAM-SHA-512'
+        assert kwargs['sasl_plain_username'] == 'mts'
+        assert kwargs['sasl_plain_password'] == 'secret'
+        assert kwargs['ssl_cafile'] == '/path/to/ca_cert'
+        # Empty auth material is omitted rather than passed through.
+        assert 'ssl_certfile' not in kwargs
+        assert 'ssl_keyfile' not in kwargs
+
+        producer = KafkaProducer.return_value
+        producer.send.assert_called_once_with(
+            'VirtualTopic.eng.mts.build.tagged', value=msg)
+        producer.send.return_value.get.assert_called_once_with(timeout=30)
+        producer.flush.assert_called_once_with()
+        producer.close.assert_called_once_with()
+
+    @patch.object(messaging.conf, 'messaging_backend', new='kafka')
+    @patch.object(messaging.conf, 'dry_run', new=True)
+    @patch.object(messaging.conf, 'kafka_topic_prefix', new='VirtualTopic.eng.mts')
+    def test_dry_run_does_not_send_via_kafka(self):
+        fake_kafka = Mock()
+
+        with patch.dict('sys.modules', {'kafka': fake_kafka}):
+            messaging.publish('build.tagged', {'koji_tag': 'module-a-1-1-c1'})
+
+        fake_kafka.KafkaProducer.assert_not_called()
 
     @patch.object(messaging.conf, 'messaging_backend', new='anothercool')
     def test_no_backend_handler_is_found(self):

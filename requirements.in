@@ -1,5 +1,6 @@
 Flask
 PyYAML
+kafka-python
 koji
 psutil
 python-qpid-proton

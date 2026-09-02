@@ -90,11 +90,76 @@ def _rhmsg_publish(topic, msg):
             producer.send(outgoing_msg)
 
 
+def kafka_client_config():
+    """Build common connection kwargs for KafkaProducer and KafkaConsumer.
+
+    Only the options that are configured are included so that unused auth
+    material (e.g. SASL credentials when using plain SSL) is left at the
+    kafka-python defaults.
+
+    :return: keyword arguments accepted by both ``KafkaProducer`` and
+        ``KafkaConsumer``.
+    :rtype: dict
+    """
+    config = {
+        'bootstrap_servers': conf.kafka_bootstrap_servers,
+        'security_protocol': conf.kafka_security_protocol,
+    }
+    if conf.kafka_sasl_mechanism:
+        config['sasl_mechanism'] = conf.kafka_sasl_mechanism
+    if conf.kafka_sasl_username:
+        config['sasl_plain_username'] = conf.kafka_sasl_username
+    if conf.kafka_sasl_password:
+        config['sasl_plain_password'] = conf.kafka_sasl_password
+    if conf.kafka_ssl_cafile:
+        config['ssl_cafile'] = conf.kafka_ssl_cafile
+    if conf.kafka_ssl_certfile:
+        config['ssl_certfile'] = conf.kafka_ssl_certfile
+    if conf.kafka_ssl_keyfile:
+        config['ssl_keyfile'] = conf.kafka_ssl_keyfile
+    return config
+
+
+def _kafka_publish(topic, msg):
+    """Send message to the IT Managed Kafka service
+
+    :param str topic: the topic where message will be sent to, e.g.
+        ``build.tagged``. The configured ``kafka_topic_prefix`` is prepended to
+        build the full topic name.
+    :param dict msg: the message that will be sent.
+    """
+    from kafka import KafkaProducer
+
+    full_topic = f'{conf.kafka_topic_prefix.rstrip(".")}.{topic}'
+
+    if conf.dry_run:
+        logger.info(
+            'DRY-RUN: send message to kafka, topic: %s, msg: %s',
+            full_topic, msg)
+        return
+
+    producer = KafkaProducer(
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        **kafka_client_config())
+    try:
+        logger.debug('Send message to topic %s: %s', full_topic, msg)
+        future = producer.send(full_topic, value=msg)
+        # Block until the broker acknowledges the message so that any delivery
+        # error is raised here and counted by the caller's failure handler.
+        future.get(timeout=conf.kafka_send_timeout)
+    finally:
+        producer.flush()
+        producer.close()
+
+
 _messaging_backends = {
     'fedora-messaging': {
         'publish': _fedora_messaging_publish
     },
     'rhmsg': {
         'publish': _rhmsg_publish
+    },
+    'kafka': {
+        'publish': _kafka_publish
     }
 }

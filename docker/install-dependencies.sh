@@ -10,6 +10,7 @@ dependencies=(
     python3-fedora-messaging
     python3-flask
     python3-gunicorn
+    python3-kafka
     python3-koji
     python3-qpid-proton
     python3-pip

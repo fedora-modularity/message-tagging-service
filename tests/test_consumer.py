@@ -72,6 +72,46 @@ class ReceiverHandler(object):
         self.callback(fake_msg, data=None)
 
 
+class FakeKafkaRecord(object):
+    """Minimal stand-in for kafka.consumer.fetcher.ConsumerRecord"""
+
+    def __init__(self, value, topic='VirtualTopic.eng.mbs.module.state.change',
+                 partition=0, offset=0):
+        self.value = value
+        self.topic = topic
+        self.partition = partition
+        self.offset = offset
+
+
+class FakeKafkaConsumer(object):
+    """Fake KafkaConsumer that yields preset records without a real broker."""
+
+    # Records the next constructed consumer will iterate over.
+    records = []
+
+    def __init__(self, *args, **kwargs):
+        self.init_args = args
+        self.init_kwargs = kwargs
+        self.commit_count = 0
+        self.closed = False
+
+    def __iter__(self):
+        return iter(FakeKafkaConsumer.records)
+
+    def commit(self):
+        self.commit_count += 1
+
+    def close(self):
+        self.closed = True
+
+
+def _fake_kafka_module():
+    """Return a fake ``kafka`` module exposing FakeKafkaConsumer."""
+    fake_kafka = Mock()
+    fake_kafka.KafkaConsumer = FakeKafkaConsumer
+    return fake_kafka
+
+
 class TestConsumer(object):
     """Test consumer method is able to handle two different type of messages
 
@@ -160,6 +200,95 @@ class TestConsumer(object):
         assert 'msg-id-01' == msg.id
         assert {'name': 'modulea'} == msg.body
         assert 'topic://VirtualTopic.event' == msg.topic
+
+    @patch.object(conf, 'messaging_backend', new='kafka')
+    @patch('message_tagging_service.consumer.tagging_service.handle')
+    @patch('requests.get')
+    def test_handle_kafka_message(self, get, handle):
+        mbs_event_msg = {
+            'name': 'python',
+            'stream': '2.7',
+            'version': '1',
+            'context': 'c1',
+            'state_name': 'ready',
+        }
+        FakeKafkaConsumer.records = [
+            FakeKafkaRecord(json.dumps(mbs_event_msg).encode())
+        ]
+
+        with open(os.path.join(test_data_dir, 'mts-test-rules.yaml'), 'r') as f:
+            rules_content = f.read()
+        get.return_value.text = rules_content
+
+        with patch.dict('sys.modules', {'kafka': _fake_kafka_module()}):
+            run()
+
+        handle.assert_called_once_with(
+            yaml.safe_load(rules_content), mbs_event_msg)
+
+    @patch.object(conf, 'messaging_backend', new='kafka')
+    @patch('message_tagging_service.consumer.tagging_service.handle')
+    @patch('requests.get')
+    def test_kafka_consumer_commits_and_closes(self, get, handle):
+        mbs_event_msg = {
+            'name': 'python',
+            'stream': '2.7',
+            'version': '1',
+            'context': 'c1',
+            'state_name': 'ready',
+        }
+        record = FakeKafkaRecord(json.dumps(mbs_event_msg).encode())
+        FakeKafkaConsumer.records = [record]
+
+        with open(os.path.join(test_data_dir, 'mts-test-rules.yaml'), 'r') as f:
+            get.return_value.text = f.read()
+
+        created = []
+        real_init = FakeKafkaConsumer.__init__
+
+        def _track_init(self, *args, **kwargs):
+            real_init(self, *args, **kwargs)
+            created.append(self)
+
+        with patch.dict('sys.modules', {'kafka': _fake_kafka_module()}):
+            with patch.object(FakeKafkaConsumer, '__init__', _track_init):
+                run()
+
+        assert len(created) == 1
+        consumer_instance = created[0]
+        # Offset is committed once, after the message is processed.
+        assert consumer_instance.commit_count == 1
+        assert consumer_instance.closed is True
+
+    @patch.object(conf, 'messaging_backend', new='kafka')
+    @patch('message_tagging_service.consumer.tagging_service.handle')
+    @patch('requests.get')
+    def test_log_error_if_kafka_message_body_is_invalid(self, get, handle):
+        with open(os.path.join(test_data_dir, 'mts-test-rules.yaml'), 'r') as f:
+            get.return_value.text = f.read()
+        FakeKafkaConsumer.records = [FakeKafkaRecord(b'non-JSON message body')]
+
+        with patch.dict('sys.modules', {'kafka': _fake_kafka_module()}):
+            with patch.object(consumer, 'logger') as logger:
+                run()
+
+        handle.assert_not_called()
+        args, _ = logger.error.call_args_list[0]
+        assert "Cannot decode message body: b'non-JSON message body'" == args[0]
+        args, _ = logger.error.call_args_list[1]
+        assert args[0].startswith('Reason:')
+
+    def test_kafka_message(self):
+        from message_tagging_service.consumer import KafkaMessage
+        msg = KafkaMessage(FakeKafkaRecord(
+            value=json.dumps({'name': 'modulea'}).encode(),
+            topic='VirtualTopic.eng.mbs.module.state.change',
+            partition=2,
+            offset=42,
+        ))
+        assert 'VirtualTopic.eng.mbs.module.state.change-2-42' == msg.id
+        assert {'name': 'modulea'} == msg.body
+        assert 'VirtualTopic.eng.mbs.module.state.change' == msg.topic
 
     def test_raise_error_if_specified_messaging_backend_is_unknown(self):
         with patch.object(conf, 'messaging_backend', new='xxxxxx'):

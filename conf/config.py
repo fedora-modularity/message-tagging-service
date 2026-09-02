@@ -51,6 +51,45 @@ class BaseConfiguration:
     # to enable durable messages.
     rhmsg_subscription_name = None
 
+    # Set messaging_backend to 'kafka' to interact with the IT Managed Kafka
+    # service instead of UMB. During the UMB->Kafka migration the relevant
+    # topics are kept in sync by the Messaging Bridge, so the kafka and rhmsg
+    # backends can be switched independently for producing and consuming.
+
+    # Kafka bootstrap servers to connect to, e.g.
+    # ['kafka-broker1:9092', 'kafka-broker2:9092']
+    kafka_bootstrap_servers = []
+    # Kafka topic MTS consumes MBS module state change events from. During the
+    # UMB->Kafka migration this topic is kept in sync with the equivalent UMB
+    # VirtualTopic by the Messaging Bridge.
+    kafka_consumer_topic = 'VirtualTopic.eng.mbs.module.state.change'
+    # Consumer group id. Kafka tracks committed offsets per consumer group, so
+    # keep this stable to avoid reprocessing messages across restarts.
+    kafka_consumer_group_id = 'mts'
+    # Where to start consuming when no committed offset exists for the group.
+    kafka_auto_offset_reset = 'earliest'
+    # A topic like build.tag.requested is passed to the publish function to
+    # generalize the messaging publish interface. This prefix is prepended to
+    # construct the full topic MTS publishes to.
+    kafka_topic_prefix = 'VirtualTopic.eng.mts'
+    # Timeout (seconds) to wait for a published message to be acknowledged.
+    kafka_send_timeout = 30
+
+    # Connection security for Kafka. One of: PLAINTEXT, SSL, SASL_PLAINTEXT,
+    # SASL_SSL. IT Managed Kafka typically uses SASL_SSL.
+    kafka_security_protocol = 'SASL_SSL'
+    # SASL mechanism, e.g. SCRAM-SHA-512, PLAIN or OAUTHBEARER. Leave empty when
+    # not using SASL.
+    kafka_sasl_mechanism = 'SCRAM-SHA-512'
+    # Credentials for SASL username/password mechanisms (PLAIN, SCRAM-*).
+    kafka_sasl_username = ''
+    kafka_sasl_password = ''
+    # Absolute paths to TLS material. kafka_ssl_cafile verifies the brokers;
+    # kafka_ssl_certfile/kafka_ssl_keyfile are only needed for mutual TLS auth.
+    kafka_ssl_cafile = ''
+    kafka_ssl_certfile = ''
+    kafka_ssl_keyfile = ''
+
     # Default is INFO. Refer to Python logging module to know valid values.
     log_level = 'INFO'
 

@@ -59,6 +59,38 @@ class UMBMessage(object):
         )
 
 
+class KafkaMessage(object):
+    """Representing a message consumed from the IT Managed Kafka service
+
+    :param msg: the record consumed from Kafka.
+    :type msg: ``kafka.consumer.fetcher.ConsumerRecord``
+    """
+
+    def __init__(self, msg):
+        self._orig_msg = msg
+        self._body = json.loads(msg.value)
+
+    @property
+    def id(self):
+        # Kafka records do not carry a message id, so derive a stable one from
+        # the record's coordinates within the topic.
+        return '{}-{}-{}'.format(
+            self._orig_msg.topic, self._orig_msg.partition, self._orig_msg.offset)
+
+    @property
+    def topic(self):
+        return self._orig_msg.topic
+
+    @property
+    def body(self):
+        return self._body
+
+    def __repr__(self):
+        return "{}(id={}, topic={}, body={})".format(
+            self.__class__.__name__, repr(self.id), repr(self.topic), repr(self.body)
+        )
+
+
 def consume(msg):
     """Do the work to tag build if it matches a rule
 
@@ -150,6 +182,38 @@ def rhmsg_backend():
         subscription_name=conf.rhmsg_subscription_name)
 
 
+def kafka_backend():
+    """Launch consumer backend based on kafka-python to consume from Kafka
+
+    Offsets are committed manually only after ``consume`` returns, giving an
+    at-least-once delivery guarantee: if the process crashes while handling a
+    message, the uncommitted message is re-delivered on restart.
+    """
+    from kafka import KafkaConsumer
+    from message_tagging_service.messaging import kafka_client_config
+
+    consumer = KafkaConsumer(
+        conf.kafka_consumer_topic,
+        group_id=conf.kafka_consumer_group_id,
+        auto_offset_reset=conf.kafka_auto_offset_reset,
+        enable_auto_commit=False,
+        **kafka_client_config())
+
+    try:
+        for msg in consumer:
+            logger.debug('Received message: %r', msg)
+            try:
+                consume(KafkaMessage(msg))
+            except json.JSONDecodeError as e:
+                # A message with an undecodable body is a poison message; log
+                # it and commit so the consumer does not get stuck on it.
+                logger.error(f'Cannot decode message body: {msg.value}')
+                logger.error(f'Reason: {str(e)}')
+            consumer.commit()
+    finally:
+        consumer.close()
+
+
 def run():
     """The entrypoint of MTS to run specific consumer backend
 
@@ -159,5 +223,7 @@ def run():
         rhmsg_backend()
     elif conf.messaging_backend == 'fedora-messaging':
         fedora_messaging_backend()
+    elif conf.messaging_backend == 'kafka':
+        kafka_backend()
     else:
         raise ValueError(f'Unknown messaging backend: {conf.messaging_backend}')
