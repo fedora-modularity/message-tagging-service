@@ -51,10 +51,11 @@ class BaseConfiguration:
     # to enable durable messages.
     rhmsg_subscription_name = None
 
-    # Kafka bootstrap servers to connect to, e.g.
-    # ['kafka-broker1:9092', 'kafka-broker2:9092']
+    # Kafka bootstrap servers to connect to. When using SCRAM-SHA-512 over
+    # SASL_SSL, connect on port 9096, e.g.
+    # ['kafka-broker1:9096', 'kafka-broker2:9096']
     kafka_bootstrap_servers = []
-    # Kafka topic MTS consumes MBS module state change events from. 
+    # Kafka topic MTS consumes MBS module state change events from.
     kafka_consumer_topic = 'VirtualTopic.eng.mbs.module.state.change'
     # Consumer group id. Kafka tracks committed offsets per consumer group, so
     # keep this stable to avoid reprocessing messages across restarts.
@@ -72,11 +73,14 @@ class BaseConfiguration:
     # SASL_SSL.
     kafka_security_protocol = 'SASL_SSL'
     # SASL mechanism, e.g. SCRAM-SHA-512, PLAIN or OAUTHBEARER. Leave empty when
-    # not using SASL.
+    # not using SASL. SCRAM-SHA-512 over SASL_SSL is the recommended mechanism;
+    # avoid AWS IAM as it does not work well with non-Java clients.
     kafka_sasl_mechanism = 'SCRAM-SHA-512'
-    # Credentials for SASL username/password mechanisms (PLAIN, SCRAM-*).
-    kafka_sasl_username = ''
-    kafka_sasl_password = ''
+    # Credentials for SASL username/password mechanisms (PLAIN, SCRAM-*). The
+    # password is read from the MTS_KAFKA_PASSWORD environment variable by
+    # default so that the secret does not have to be stored in the config file.
+    kafka_sasl_username = os.environ.get('MTS_KAFKA_USERNAME', '')
+    kafka_sasl_password = os.environ.get('MTS_KAFKA_PASSWORD', '')
     # Absolute paths to TLS material. kafka_ssl_cafile verifies the brokers;
     # kafka_ssl_certfile/kafka_ssl_keyfile are only needed for mutual TLS auth.
     kafka_ssl_cafile = ''

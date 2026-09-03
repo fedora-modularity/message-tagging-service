@@ -164,6 +164,19 @@ Specify an alternative config file instead of reading the ``conf/config.py``
 when ``MTS_DEV`` is enabled or ``/etc/mts/config.py`` if MTS is installed in
 system. Either an absolute path or relative path works.
 
+MTS_KAFKA_USERNAME
+~~~~~~~~~~~~~~~~~~
+
+Kafka SASL username used when ``messaging_backend`` is ``kafka``. Overrides
+the ``kafka_sasl_username`` config value.
+
+MTS_KAFKA_PASSWORD
+~~~~~~~~~~~~~~~~~~
+
+Kafka SASL password used when ``messaging_backend`` is ``kafka``. Overrides
+the ``kafka_sasl_password`` config value. Sourcing the password from the
+environment avoids storing the secret in the config file.
+
 Contribution
 ------------
 
