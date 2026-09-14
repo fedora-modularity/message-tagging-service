@@ -80,7 +80,7 @@ config value:
 
 * ``fedora-messaging`` (default) -- Fedora infra RabbitMQ, configured via
   ``conf/mts.toml``.
-* ``rhmsg`` -- Red Hat Unified Message Bus (UMB), configured via the
+* ``rhmsg`` -- Internal Unified Message Bus (UMB), configured via the
   ``rhmsg_*`` config values.
 * ``kafka`` -- Kafka service, configured via the ``kafka_*``
   config values.
