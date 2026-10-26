@@ -56,7 +56,7 @@ class BaseConfiguration:
     # ['kafka-broker1:9096', 'kafka-broker2:9096']
     kafka_bootstrap_servers = []
     # Kafka topic MTS consumes MBS module state change events from.
-    kafka_consumer_topic = 'VirtualTopic.eng.mbs.module.state.change'
+    kafka_consumer_topic = 'eng.mbs.module.state.change'
     # Consumer group id. Kafka tracks committed offsets per consumer group, so
     # keep this stable to avoid reprocessing messages across restarts.
     kafka_consumer_group_id = 'mts'
@@ -65,7 +65,7 @@ class BaseConfiguration:
     # A topic like build.tag.requested is passed to the publish function to
     # generalize the messaging publish interface. This prefix is prepended to
     # construct the full topic MTS publishes to.
-    kafka_topic_prefix = 'VirtualTopic.eng.mts'
+    kafka_topic_prefix = 'eng.mts'
     # Timeout (seconds) to wait for a published message to be acknowledged.
     kafka_send_timeout = 30
 

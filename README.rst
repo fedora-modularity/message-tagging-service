@@ -139,8 +139,10 @@ Topic Prefix
 For Fedora, messages are sent to topics with prefix ``org.fedoraproject.prod``,
 e.g. ``org.fedoraproject.prod.mts.build.tag.requested``.
 
-For internal, the prefix is ``VirtualTopic.eng.mts``, e.g.
+For internal UMB (``rhmsg``), the prefix is ``VirtualTopic.eng.mts``, e.g.
 ``VirtualTopic.eng.mts.build.tag.requested``.
+
+For Kafka, the prefix is ``eng.mts``, e.g. ``eng.mts.build.tag.requested``.
 
 Environment Variables
 ---------------------

@@ -81,7 +81,7 @@ class TestMessaging(object):
     @patch.object(messaging.conf, 'kafka_ssl_cafile', new='/path/to/ca_cert')
     @patch.object(messaging.conf, 'kafka_ssl_certfile', new='')
     @patch.object(messaging.conf, 'kafka_ssl_keyfile', new='')
-    @patch.object(messaging.conf, 'kafka_topic_prefix', new='VirtualTopic.eng.mts')
+    @patch.object(messaging.conf, 'kafka_topic_prefix', new='eng.mts')
     @patch.object(messaging.conf, 'kafka_send_timeout', new=30)
     def test_send_via_kafka(self):
         fake_kafka = Mock()
@@ -105,14 +105,14 @@ class TestMessaging(object):
 
         producer = KafkaProducer.return_value
         producer.send.assert_called_once_with(
-            'VirtualTopic.eng.mts.build.tagged', value=msg)
+            'eng.mts.build.tagged', value=msg)
         producer.send.return_value.get.assert_called_once_with(timeout=30)
         producer.flush.assert_called_once_with()
         producer.close.assert_called_once_with()
 
     @patch.object(messaging.conf, 'messaging_backend', new='kafka')
     @patch.object(messaging.conf, 'dry_run', new=True)
-    @patch.object(messaging.conf, 'kafka_topic_prefix', new='VirtualTopic.eng.mts')
+    @patch.object(messaging.conf, 'kafka_topic_prefix', new='eng.mts')
     def test_dry_run_does_not_send_via_kafka(self):
         fake_kafka = Mock()
 
