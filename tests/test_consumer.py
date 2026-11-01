@@ -278,6 +278,40 @@ class TestConsumer(object):
         args, _ = logger.error.call_args_list[1]
         assert args[0].startswith('Reason:')
 
+    @patch.object(conf, 'messaging_backend', new='kafka')
+    @patch('message_tagging_service.consumer.tagging_service.handle')
+    @patch('requests.get')
+    def test_kafka_commits_offset_when_message_cannot_be_handled(self, get, handle):
+        """A message that makes ``consume`` raise must not be re-delivered
+
+        The body is valid JSON and passes the state filter, but lacks the
+        fields used to build the NSVC, so ``consume`` raises KeyError. The
+        offset still has to be committed, otherwise the consumer would be
+        re-delivered the same message forever.
+        """
+        with open(os.path.join(test_data_dir, 'mts-test-rules.yaml'), 'r') as f:
+            get.return_value.text = f.read()
+        FakeKafkaConsumer.records = [
+            FakeKafkaRecord(json.dumps({'state_name': 'ready'}).encode())
+        ]
+
+        created = []
+        real_init = FakeKafkaConsumer.__init__
+
+        def _track_init(self, *args, **kwargs):
+            real_init(self, *args, **kwargs)
+            created.append(self)
+
+        with patch.dict('sys.modules', {'kafka': _fake_kafka_module()}):
+            with patch.object(FakeKafkaConsumer, '__init__', _track_init):
+                with patch.object(consumer, 'logger') as logger:
+                    run()
+
+        handle.assert_not_called()
+        logger.exception.assert_called_once()
+        assert created[0].commit_count == 1
+        assert created[0].closed is True
+
     def test_kafka_message(self):
         from message_tagging_service.consumer import KafkaMessage
         msg = KafkaMessage(FakeKafkaRecord(
