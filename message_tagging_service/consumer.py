@@ -188,6 +188,11 @@ def kafka_backend():
     Offsets are committed manually only after ``consume`` returns, giving an
     at-least-once delivery guarantee: if the process crashes while handling a
     message, the uncommitted message is re-delivered on restart.
+
+    Because an uncommitted offset is re-delivered, letting an exception escape
+    this loop would stop the consumer on the same message forever. Failures are
+    logged and the offset committed instead, matching how ``consume`` already
+    keeps going after a failed tagging attempt.
     """
     from kafka import KafkaConsumer
     from message_tagging_service.messaging import kafka_client_config
@@ -209,6 +214,11 @@ def kafka_backend():
                 # it and commit so the consumer does not get stuck on it.
                 logger.error(f'Cannot decode message body: {msg.value}')
                 logger.error(f'Reason: {str(e)}')
+            except Exception:  # noqa
+                # Anything else, e.g. a message missing a field ``consume``
+                # expects, would otherwise be re-delivered forever.
+                logger.exception(f'Failed to handle message {msg.value}')
+                logger.info('Continue to handle next MBS message ...')
             consumer.commit()
     finally:
         consumer.close()
